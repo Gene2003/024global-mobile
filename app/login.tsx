@@ -17,13 +17,17 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const res = await api.post('/token/', { email, password });
+      // Backend serializer reads 'username' field — send email value under that key
+      const res = await api.post('/token/', { username: email, password });
       await saveTokens(res.data.access, res.data.refresh);
-      const userRes = await api.get('/users/me/');
-      await saveUser(userRes.data);
+      // Login response already includes user object
+      await saveUser(res.data.user);
       router.replace('/(tabs)/profile');
     } catch (err: any) {
-      Alert.alert('Login Failed', err.response?.data?.detail || 'Invalid email or password');
+      const msg = err.response?.data?.detail
+        || err.response?.data?.non_field_errors?.[0]
+        || 'Invalid email or password';
+      Alert.alert('Login Failed', msg);
     } finally {
       setLoading(false);
     }

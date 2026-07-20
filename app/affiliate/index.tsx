@@ -85,6 +85,11 @@ export default function AffiliateDashboard() {
             ))}
           </View>
 
+          <TouchableOpacity style={styles.verifyBtn} onPress={() => router.push('/affiliate/verify-farmer')}>
+            <Ionicons name="shield-checkmark" size={18} color="#fff" />
+            <Text style={styles.browseBtnText}>Verify a Farmer</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/(tabs)/products')}>
             <Ionicons name="storefront" size={18} color="#fff" />
             <Text style={styles.browseBtnText}>Browse Products to Promote</Text>
@@ -143,6 +148,7 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: '800' },
   statLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
   browseBtn: { backgroundColor: '#1d4ed8', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 8 },
+  verifyBtn: { backgroundColor: '#16a34a', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 8 },
   browseBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   emptyState: { alignItems: 'center', marginTop: 60, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },

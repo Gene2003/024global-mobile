@@ -1,12 +1,33 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { getUser } from '../../lib/auth';
+import { useTheme } from '../../lib/theme-context';
+import {
+  Screen, AppHeader, Segmented, Loader, EmptyState, Badge, useThemedStyles,
+} from '../../components/ui';
 
 export default function ServiceProviderDashboard() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    list: { flex: 1, padding: 16 },
+    serviceCard: { backgroundColor: t.colors.surface, borderRadius: t.radius.md, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: t.colors.border },
+    serviceHeader: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 6, gap: 8 },
+    serviceName: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text, flex: 1 },
+    serviceDesc: { fontSize: 13, color: t.colors.textMuted, marginBottom: 8 },
+    serviceMeta: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+    servicePrice: { fontSize: 15, fontWeight: '700' as const, color: t.colors.success },
+    serviceLocation: { fontSize: 12, color: t.colors.textMuted },
+    bookingCard: { backgroundColor: t.colors.surface, borderRadius: t.radius.md, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: t.colors.border },
+    bookingService: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    bookingClient: { fontSize: 13, color: t.colors.textMuted, marginTop: 4 },
+    bookingDate: { fontSize: 12, color: t.colors.placeholder, marginTop: 2 },
+  }));
+
   const [user, setUser] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -42,49 +63,37 @@ export default function ServiceProviderDashboard() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Service Provider</Text>
-          {user && <Text style={styles.subtitle}>{user.first_name} · {serviceTypeLabel(user.vendor_type || '')}</Text>}
-        </View>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Service Provider"
+        subtitle={user ? `${user.first_name} · ${serviceTypeLabel(user.vendor_type || '')}` : undefined}
+      />
 
-      <View style={styles.tabs}>
-        {(['services', 'bookings'] as const).map((t) => (
-          <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'services' ? 'My Services' : 'Bookings'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <Segmented
+        options={[
+          { key: 'services', label: 'My Services' },
+          { key: 'bookings', label: 'Bookings' },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1d4ed8" style={{ marginTop: 40 }} />
+        <Loader />
       ) : tab === 'services' ? (
         <ScrollView style={styles.list}>
           {services.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="briefcase-outline" size={48} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>No services yet</Text>
-              <Text style={styles.emptyText}>Your services will appear here once added via the website dashboard.</Text>
-            </View>
+            <EmptyState icon="briefcase-outline" text="No services yet. Your services will appear here once added via the website dashboard." />
           ) : services.map((s) => (
             <View key={s.id} style={styles.serviceCard}>
               <View style={styles.serviceHeader}>
                 <Text style={styles.serviceName}>{s.name}</Text>
-                <View style={[styles.badge, { backgroundColor: '#dbeafe' }]}>
-                  <Text style={[styles.badgeText, { color: '#1d4ed8' }]}>{serviceTypeLabel(s.service_type)}</Text>
-                </View>
+                <Badge label={serviceTypeLabel(s.service_type)} tone="info" />
               </View>
               {s.description ? <Text style={styles.serviceDesc} numberOfLines={2}>{s.description}</Text> : null}
               <View style={styles.serviceMeta}>
                 {s.price ? <Text style={styles.servicePrice}>KES {s.price}</Text> : null}
-                {s.city ? <Text style={styles.serviceLocation}><Ionicons name="location" size={12} color="#6b7280" /> {s.city}</Text> : null}
+                {s.city ? <Text style={styles.serviceLocation}><Ionicons name="location" size={12} color={c.textMuted} /> {s.city}</Text> : null}
               </View>
             </View>
           ))}
@@ -92,53 +101,17 @@ export default function ServiceProviderDashboard() {
       ) : (
         <ScrollView style={styles.list}>
           {bookings.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>No bookings yet</Text>
-              <Text style={styles.emptyText}>Client bookings will appear here.</Text>
-            </View>
+            <EmptyState icon="calendar-outline" text="No bookings yet. Client bookings will appear here." />
           ) : bookings.map((b) => (
             <View key={b.id} style={styles.bookingCard}>
               <Text style={styles.bookingService}>{b.service_name || b.service}</Text>
               <Text style={styles.bookingClient}>Client: {b.client_name || b.client}</Text>
               <Text style={styles.bookingDate}>{b.created_at ? new Date(b.created_at).toLocaleDateString() : ''}</Text>
-              <View style={[styles.badge, { backgroundColor: '#fef9c3', alignSelf: 'flex-start', marginTop: 6 }]}>
-                <Text style={[styles.badgeText, { color: '#92400e' }]}>{b.status?.toUpperCase() || 'PENDING'}</Text>
-              </View>
+              <Badge label={b.status?.toUpperCase() || 'PENDING'} tone="gold" style={{ marginTop: 6 }} />
             </View>
           ))}
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280' },
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#1d4ed8' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-  tabTextActive: { color: '#1d4ed8' },
-  list: { flex: 1, padding: 16 },
-  emptyState: { alignItems: 'center', marginTop: 60, gap: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center', paddingHorizontal: 20 },
-  serviceCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10 },
-  serviceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  serviceName: { fontSize: 15, fontWeight: '700', color: '#111827', flex: 1 },
-  serviceDesc: { fontSize: 13, color: '#6b7280', marginBottom: 8 },
-  serviceMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  servicePrice: { fontSize: 15, fontWeight: '700', color: '#16a34a' },
-  serviceLocation: { fontSize: 12, color: '#6b7280' },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  bookingCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10 },
-  bookingService: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  bookingClient: { fontSize: 13, color: '#6b7280', marginTop: 4 },
-  bookingDate: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-});

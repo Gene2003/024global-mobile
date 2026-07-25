@@ -1,14 +1,38 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, useThemedStyles } from '../../components/ui';
 
 export default function AdminCommissions() {
-  const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    count: { backgroundColor: 'rgba(255,255,255,0.15)', color: t.colors.onHeader, fontWeight: '700' as const, fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' as const },
+    center: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 12 },
+    loadingText: { fontSize: 14, color: t.colors.textMuted },
+    list: { padding: 16, paddingBottom: 40 },
+    empty: { textAlign: 'center' as const, color: t.colors.textMuted, marginTop: 40, fontSize: 15 },
+    card: { backgroundColor: t.colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 6, elevation: 2 },
+    cardTop: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 12 },
+    leftInfo: { flex: 1 },
+    affiliate: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    meta: { fontSize: 13, color: t.colors.textMuted, marginTop: 2 },
+    amount: { fontSize: 16, fontWeight: '800' as const, color: t.colors.success, marginTop: 4 },
+    date: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    badgeText: { fontSize: 11, fontWeight: '700' as const },
+    actionBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8, paddingVertical: 12, borderRadius: 10 },
+    actionText: { fontSize: 14, fontWeight: '700' as const },
+    disabled: { opacity: 0.6 },
+    paidRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, justifyContent: 'center' as const, paddingVertical: 8 },
+    paidText: { fontSize: 13, color: t.colors.success, fontWeight: '600' as const },
+  }));
+
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -58,24 +82,22 @@ export default function AdminCommissions() {
   };
 
   const statusStyle = (status: string) => {
-    if (status === 'approved') return { bg: '#dcfce7', text: '#16a34a' };
-    if (status === 'paid') return { bg: '#dbeafe', text: '#1d4ed8' };
-    return { bg: '#fef9c3', text: '#92400e' };
+    if (status === 'approved') return { bg: c.successTint, text: c.success };
+    if (status === 'paid') return { bg: c.infoTint, text: c.info };
+    return { bg: c.goldTint, text: theme.scheme === 'dark' ? c.gold : '#8A6D0B' };
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Commission Logs</Text>
-        <Text style={styles.count}>{commissions.length}</Text>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Commission Logs"
+        subtitle="Approve and pay commissions"
+        right={<Text style={styles.count}>{commissions.length}</Text>}
+      />
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
+          <ActivityIndicator size="large" color={c.primary} />
           <Text style={styles.loadingText}>Loading commissions...</Text>
         </View>
       ) : (
@@ -84,58 +106,58 @@ export default function AdminCommissions() {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.empty}>No commission records found.</Text>}
-          renderItem={({ item: c }) => {
-            const colors = statusStyle(c.status);
-            const isBusy = busyId === c.id;
+          renderItem={({ item: cItem }: { item: any }) => {
+            const colors = statusStyle(cItem.status);
+            const isBusy = busyId === cItem.id;
             return (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
                   <View style={styles.leftInfo}>
-                    <Text style={styles.affiliate}>{c.affiliate_name || c.affiliate || 'Affiliate'}</Text>
-                    <Text style={styles.meta}>Order #{c.order || c.order_id}</Text>
-                    <Text style={styles.amount}>KES {c.commission_earned}</Text>
+                    <Text style={styles.affiliate}>{cItem.affiliate_name || cItem.affiliate || 'Affiliate'}</Text>
+                    <Text style={styles.meta}>Order #{cItem.order || cItem.order_id}</Text>
+                    <Text style={styles.amount}>KES {cItem.commission_earned}</Text>
                     <Text style={styles.date}>
-                      {c.created_at ? new Date(c.created_at).toLocaleDateString() : ''}
+                      {cItem.created_at ? new Date(cItem.created_at).toLocaleDateString() : ''}
                     </Text>
                   </View>
                   <View style={[styles.badge, { backgroundColor: colors.bg }]}>
                     <Text style={[styles.badgeText, { color: colors.text }]}>
-                      {c.status?.toUpperCase()}
+                      {cItem.status?.toUpperCase()}
                     </Text>
                   </View>
                 </View>
 
-                {c.status === 'pending' && (
+                {cItem.status === 'pending' && (
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#dcfce7' }, isBusy && styles.disabled]}
-                    onPress={() => approve(c)}
+                    style={[styles.actionBtn, { backgroundColor: c.successTint }, isBusy && styles.disabled]}
+                    onPress={() => approve(cItem)}
                     disabled={isBusy}
                   >
                     {isBusy
-                      ? <ActivityIndicator size="small" color="#16a34a" />
-                      : <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+                      ? <ActivityIndicator size="small" color={c.success} />
+                      : <Ionicons name="checkmark-circle" size={18} color={c.success} />
                     }
-                    <Text style={[styles.actionText, { color: '#16a34a' }]}>Approve Commission</Text>
+                    <Text style={[styles.actionText, { color: c.success }]}>Approve Commission</Text>
                   </TouchableOpacity>
                 )}
 
-                {c.status === 'approved' && (
+                {cItem.status === 'approved' && (
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#dbeafe' }, isBusy && styles.disabled]}
-                    onPress={() => payout(c)}
+                    style={[styles.actionBtn, { backgroundColor: c.infoTint }, isBusy && styles.disabled]}
+                    onPress={() => payout(cItem)}
                     disabled={isBusy}
                   >
                     {isBusy
-                      ? <ActivityIndicator size="small" color="#1d4ed8" />
-                      : <Ionicons name="cash" size={18} color="#1d4ed8" />
+                      ? <ActivityIndicator size="small" color={c.primary} />
+                      : <Ionicons name="cash" size={18} color={c.primary} />
                     }
-                    <Text style={[styles.actionText, { color: '#1d4ed8' }]}>Mark as Paid</Text>
+                    <Text style={[styles.actionText, { color: c.primary }]}>Mark as Paid</Text>
                   </TouchableOpacity>
                 )}
 
-                {c.status === 'paid' && (
+                {cItem.status === 'paid' && (
                   <View style={styles.paidRow}>
-                    <Ionicons name="checkmark-done-circle" size={16} color="#16a34a" />
+                    <Ionicons name="checkmark-done-circle" size={16} color={c.success} />
                     <Text style={styles.paidText}>Commission paid</Text>
                   </View>
                 )}
@@ -144,32 +166,6 @@ export default function AdminCommissions() {
           }}
         />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: '#111827' },
-  count: { backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#6b7280' },
-  list: { padding: 16, paddingBottom: 40 },
-  empty: { textAlign: 'center', color: '#9ca3af', marginTop: 40, fontSize: 15 },
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  leftInfo: { flex: 1 },
-  affiliate: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  meta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  amount: { fontSize: 16, fontWeight: '800', color: '#16a34a', marginTop: 4 },
-  date: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 10 },
-  actionText: { fontSize: 14, fontWeight: '700' },
-  disabled: { opacity: 0.6 },
-  paidRow: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', paddingVertical: 8 },
-  paidText: { fontSize: 13, color: '#16a34a', fontWeight: '600' },
-});

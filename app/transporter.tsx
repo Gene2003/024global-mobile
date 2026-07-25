@@ -1,11 +1,29 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../lib/api';
+import { Screen, AppHeader, Button, EmptyState, Loader, useThemedStyles } from '../components/ui';
+import { useTheme } from '../lib/theme-context';
 
 export default function TransporterScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    header: { backgroundColor: t.colors.surface, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: t.colors.border },
+    sub: { fontSize: 13, color: t.colors.textMuted, marginBottom: 12 },
+    searchBox: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border, borderRadius: t.radius.md, paddingHorizontal: 12, paddingVertical: 8 },
+    searchInput: { flex: 1, fontSize: 14, color: t.colors.text },
+    list: { padding: 16 },
+    card: { backgroundColor: t.colors.surface, borderRadius: t.radius.md, borderWidth: 1, borderColor: t.colors.border, marginBottom: 16, overflow: 'hidden' as const, elevation: 2 },
+    image: { width: '100%' as const, height: 160 },
+    cardBody: { padding: 14 },
+    name: { fontSize: 17, fontWeight: '700' as const, color: t.colors.text, marginBottom: 6 },
+    desc: { fontSize: 13, color: t.colors.textMuted, marginBottom: 8 },
+    provider: { fontSize: 12, color: t.colors.textMuted, marginBottom: 12 },
+  }));
+
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -25,16 +43,22 @@ export default function TransporterScreen() {
     s.description?.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#1d4ed8" /></View>;
+  if (loading) return <Loader />;
 
   return (
-    <View style={styles.container}>
+    <Screen>
+      <AppHeader title="Transporters" />
       <View style={styles.header}>
-        <Text style={styles.title}>Transporters</Text>
         <Text style={styles.sub}>Find verified transporters for your goods</Text>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={18} color="#9ca3af" style={{ marginRight: 8 }} />
-          <TextInput placeholder="Search transporters..." value={search} onChangeText={setSearch} style={styles.searchInput} />
+          <Ionicons name="search" size={18} color={c.placeholder} style={{ marginRight: 8 }} />
+          <TextInput
+            placeholder="Search transporters..."
+            placeholderTextColor={c.placeholder}
+            value={search}
+            onChangeText={setSearch}
+            style={styles.searchInput}
+          />
         </View>
       </View>
 
@@ -49,41 +73,23 @@ export default function TransporterScreen() {
               <Text style={styles.name}>{item.title}</Text>
               <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>
               <Text style={styles.provider}>Provider: {item.provider_name}</Text>
-              <TouchableOpacity style={styles.contactBtn} onPress={() => router.push(`/contact-service-provider?id=${item.id}` as any)}>
-                <Ionicons name="car" size={16} color="#fff" />
-                <Text style={styles.contactBtnText}>Contact Transporter</Text>
-              </TouchableOpacity>
+              <Button
+                title="Request Pickup"
+                icon="cube"
+                onPress={() => router.push(`/request-transport?id=${item.id}&title=${encodeURIComponent(item.title || 'Transport')}` as any)}
+              />
+              <Button
+                title="Contact Transporter"
+                icon="call"
+                variant="outline"
+                onPress={() => router.push(`/contact-service-provider?id=${item.id}` as any)}
+                style={{ marginTop: 8 }}
+              />
             </View>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="car" size={48} color="#d1d5db" />
-            <Text style={styles.emptyText}>No transporters available yet</Text>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState icon="car" text="No transporters available yet" />}
       />
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: '#fff', paddingTop: 56, paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  title: { fontSize: 24, fontWeight: '800', color: '#111827', marginBottom: 4 },
-  sub: { fontSize: 13, color: '#6b7280', marginBottom: 12 },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  searchInput: { flex: 1, fontSize: 14, color: '#111827' },
-  list: { padding: 16 },
-  card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, overflow: 'hidden', elevation: 2 },
-  image: { width: '100%', height: 160 },
-  cardBody: { padding: 14 },
-  name: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 6 },
-  desc: { fontSize: 13, color: '#6b7280', marginBottom: 8 },
-  provider: { fontSize: 12, color: '#4b5563', marginBottom: 12 },
-  contactBtn: { backgroundColor: '#1d4ed8', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 10, paddingVertical: 10 },
-  contactBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { color: '#9ca3af', fontSize: 16, marginTop: 12 },
-});

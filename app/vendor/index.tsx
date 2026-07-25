@@ -1,14 +1,41 @@
-import { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  ActivityIndicator, Alert, Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import {
+  Screen, AppHeader, Segmented, Loader, EmptyState, useThemedStyles,
+} from '../../components/ui';
 
 export default function VendorDashboard() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    list: { padding: 16, paddingBottom: 40 },
+    empty: { textAlign: 'center' as const, color: t.colors.textMuted, marginTop: 40, fontSize: 15 },
+    emptyBtn: { backgroundColor: t.colors.primary, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 20, paddingVertical: 10, borderRadius: t.radius.md, marginTop: 14 },
+    emptyBtnText: { color: t.colors.onPrimary, fontWeight: '700' as const },
+    productCard: { flexDirection: 'row' as const, backgroundColor: t.colors.surface, borderRadius: t.radius.lg, padding: 12, marginBottom: 10, gap: 12, alignItems: 'flex-start' as const, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+    productImg: { width: 72, height: 72, borderRadius: t.radius.md },
+    imgPlaceholder: { width: 72, height: 72, borderRadius: t.radius.md, backgroundColor: t.colors.surfaceAlt, alignItems: 'center' as const, justifyContent: 'center' as const },
+    productInfo: { flex: 1 },
+    productName: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    productPrice: { fontSize: 14, color: t.colors.success, fontWeight: '700' as const, marginTop: 4 },
+    productStock: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    outOfStock: { backgroundColor: t.colors.dangerTint, borderRadius: t.radius.sm, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' as const, marginTop: 4 },
+    outOfStockText: { fontSize: 11, color: t.colors.danger, fontWeight: '700' as const },
+    totalCard: { backgroundColor: t.colors.primary, borderRadius: t.radius.lg, padding: 20, marginBottom: 16, alignItems: 'center' as const },
+    totalLabel: { fontSize: 13, color: t.colors.onPrimary, opacity: 0.85, fontWeight: '600' as const },
+    totalValue: { fontSize: 32, fontWeight: '800' as const, color: t.colors.onPrimary, marginTop: 4 },
+    saleCard: { backgroundColor: t.colors.surface, borderRadius: t.radius.lg, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2 },
+    saleName: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text, marginBottom: 6 },
+    saleRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 6 },
+    saleMeta: { fontSize: 13, color: t.colors.textMuted },
+    saleTotal: { fontSize: 18, fontWeight: '800' as const, color: t.colors.success },
+  }));
+
   const [tab, setTab] = useState<'products' | 'sales'>('products');
   const [products, setProducts] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
@@ -44,6 +71,13 @@ export default function VendorDashboard() {
     else fetchSales();
   }, [tab]);
 
+  // refresh product list when returning from the edit/add screen
+  useFocusEffect(
+    useCallback(() => {
+      if (tab === 'products') fetchProducts(true);
+    }, [tab])
+  );
+
   const getPrice = (p: any) => {
     if (Number(p.retailer_price) > 0) return Number(p.retailer_price);
     if (Number(p.wholesaler_price) > 0) return Number(p.wholesaler_price);
@@ -56,59 +90,56 @@ export default function VendorDashboard() {
   const totalCollected = sales.reduce((s, r) => s + (Number(r.total_collected) || 0), 0);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Vendor Dashboard</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/vendor/add-product')}>
-          <Ionicons name="add" size={22} color="#1d4ed8" />
-        </TouchableOpacity>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Vendor Dashboard"
+        right={
+          <TouchableOpacity
+            hitSlop={10}
+            style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.10)', alignItems: 'center', justifyContent: 'center' }}
+            onPress={() => router.push('/vendor/add-product')}
+          >
+            <Ionicons name="add" size={22} color={c.onHeader} />
+          </TouchableOpacity>
+        }
+      />
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        {([
+      <Segmented
+        options={[
           { key: 'products', label: 'My Products' },
           { key: 'sales', label: 'Sales Overview' },
-        ] as const).map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => setTab(t.key)}
-          >
-            <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>{t.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
-        </View>
+        <Loader />
       ) : tab === 'products' ? (
         <FlatList
           data={products}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="cube-outline" size={56} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>No products yet</Text>
+            <View style={{ alignItems: 'center', marginTop: 40 }}>
+              <EmptyState icon="cube-outline" text="No products yet" />
               <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/vendor/add-product')}>
-                <Ionicons name="add" size={16} color="#fff" />
+                <Ionicons name="add" size={16} color={c.onPrimary} />
                 <Text style={styles.emptyBtnText}>Add Your First Product</Text>
               </TouchableOpacity>
             </View>
           }
           renderItem={({ item: p }) => (
-            <View style={styles.productCard}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.productCard}
+              onPress={() => router.push(`/vendor/edit-product?id=${p.id}` as any)}
+            >
               {p.image ? (
                 <Image source={{ uri: p.image }} style={styles.productImg} />
               ) : (
                 <View style={styles.imgPlaceholder}>
-                  <Ionicons name="image" size={24} color="#d1d5db" />
+                  <Ionicons name="image" size={24} color={c.placeholder} />
                 </View>
               )}
               <View style={styles.productInfo}>
@@ -121,7 +152,11 @@ export default function VendorDashboard() {
                   </View>
                 )}
               </View>
-            </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="create-outline" size={16} color={c.primary} />
+                <Ionicons name="chevron-forward" size={16} color={c.placeholder} />
+              </View>
+            </TouchableOpacity>
           )}
         />
       ) : (
@@ -152,43 +187,6 @@ export default function VendorDashboard() {
           )}
         />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: '#111827' },
-  addBtn: { padding: 8, backgroundColor: '#eff6ff', borderRadius: 8 },
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#1d4ed8' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-  tabTextActive: { color: '#1d4ed8' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list: { padding: 16, paddingBottom: 40 },
-  empty: { textAlign: 'center', color: '#9ca3af', marginTop: 40, fontSize: 15 },
-  emptyState: { alignItems: 'center', marginTop: 60, gap: 14 },
-  emptyTitle: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
-  emptyBtn: { backgroundColor: '#1d4ed8', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
-  emptyBtnText: { color: '#fff', fontWeight: '700' },
-  productCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 14, padding: 12, marginBottom: 10, gap: 12, alignItems: 'flex-start', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  productImg: { width: 72, height: 72, borderRadius: 10 },
-  imgPlaceholder: { width: 72, height: 72, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
-  productInfo: { flex: 1 },
-  productName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  productPrice: { fontSize: 14, color: '#16a34a', fontWeight: '700', marginTop: 4 },
-  productStock: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  outOfStock: { backgroundColor: '#fee2e2', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', marginTop: 4 },
-  outOfStockText: { fontSize: 11, color: '#dc2626', fontWeight: '700' },
-  totalCard: { backgroundColor: '#1d4ed8', borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  totalLabel: { fontSize: 13, color: '#bfdbfe', fontWeight: '600' },
-  totalValue: { fontSize: 32, fontWeight: '800', color: '#fff', marginTop: 4 },
-  saleCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 8, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  saleName: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 6 },
-  saleRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  saleMeta: { fontSize: 13, color: '#6b7280' },
-  saleTotal: { fontSize: 18, fontWeight: '800', color: '#16a34a' },
-});

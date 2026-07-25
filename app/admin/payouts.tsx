@@ -1,14 +1,38 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, useThemedStyles } from '../../components/ui';
 
 export default function AdminPayouts() {
-  const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    center: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 12 },
+    loadingText: { fontSize: 14, color: t.colors.textMuted },
+    list: { padding: 16, paddingBottom: 40 },
+    totalCard: { backgroundColor: t.colors.primary, borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' as const },
+    totalLabel: { fontSize: 13, color: t.colors.onPrimary, opacity: 0.85, fontWeight: '600' as const },
+    totalValue: { fontSize: 32, fontWeight: '800' as const, color: t.colors.onPrimary, marginTop: 4 },
+    totalSub: { fontSize: 13, color: t.colors.onPrimary, opacity: 0.85, marginTop: 4 },
+    emptyState: { alignItems: 'center' as const, marginTop: 60, gap: 12 },
+    emptyTitle: { fontSize: 20, fontWeight: '800' as const, color: t.colors.text },
+    emptyText: { fontSize: 14, color: t.colors.textMuted, textAlign: 'center' as const },
+    card: { flexDirection: 'row' as const, alignItems: 'center' as const, backgroundColor: t.colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, gap: 12, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 6, elevation: 2 },
+    cardInfo: { flex: 1 },
+    name: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    amount: { fontSize: 20, fontWeight: '800' as const, color: t.colors.success, marginTop: 2 },
+    meta: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    date: { fontSize: 12, color: t.colors.textMuted },
+    payBtn: { backgroundColor: t.colors.primary, flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
+    payBtnText: { color: t.colors.onPrimary, fontWeight: '700' as const, fontSize: 13 },
+    disabled: { opacity: 0.6 },
+  }));
+
   const [commissions, setCommissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -48,17 +72,12 @@ export default function AdminPayouts() {
   const totalPending = commissions.reduce((s, c) => s + parseFloat(c.commission_earned || 0), 0);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Payout Manager</Text>
-      </View>
+    <Screen>
+      <AppHeader title="Payout Manager" subtitle="Approved commissions awaiting payment" />
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
+          <ActivityIndicator size="large" color={c.primary} />
           <Text style={styles.loadingText}>Loading payouts...</Text>
         </View>
       ) : (
@@ -77,31 +96,31 @@ export default function AdminPayouts() {
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="checkmark-circle" size={56} color="#16a34a" />
+              <Ionicons name="checkmark-circle" size={56} color={c.success} />
               <Text style={styles.emptyTitle}>All caught up!</Text>
               <Text style={styles.emptyText}>No approved commissions pending payout.</Text>
             </View>
           }
-          renderItem={({ item: c }) => {
-            const isBusy = busyId === c.id;
+          renderItem={({ item }: { item: any }) => {
+            const isBusy = busyId === item.id;
             return (
               <View style={styles.card}>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.name}>{c.affiliate_name || c.affiliate || 'Affiliate'}</Text>
-                  <Text style={styles.amount}>KES {c.commission_earned}</Text>
-                  <Text style={styles.meta}>Order #{c.order || c.order_id}</Text>
+                  <Text style={styles.name}>{item.affiliate_name || item.affiliate || 'Affiliate'}</Text>
+                  <Text style={styles.amount}>KES {item.commission_earned}</Text>
+                  <Text style={styles.meta}>Order #{item.order || item.order_id}</Text>
                   <Text style={styles.date}>
-                    {c.created_at ? new Date(c.created_at).toLocaleDateString() : ''}
+                    {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                   </Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.payBtn, isBusy && styles.disabled]}
-                  onPress={() => markPaid(c)}
+                  onPress={() => markPaid(item)}
                   disabled={isBusy}
                 >
                   {isBusy
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <Ionicons name="cash" size={18} color="#fff" />
+                    ? <ActivityIndicator size="small" color={c.onPrimary} />
+                    : <Ionicons name="cash" size={18} color={c.onPrimary} />
                   }
                   <Text style={styles.payBtnText}>{isBusy ? 'Processing...' : 'Mark Paid'}</Text>
                 </TouchableOpacity>
@@ -110,32 +129,6 @@ export default function AdminPayouts() {
           }}
         />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: '#111827' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#6b7280' },
-  list: { padding: 16, paddingBottom: 40 },
-  totalCard: { backgroundColor: '#1d4ed8', borderRadius: 16, padding: 20, marginBottom: 16, alignItems: 'center' },
-  totalLabel: { fontSize: 13, color: '#bfdbfe', fontWeight: '600' },
-  totalValue: { fontSize: 32, fontWeight: '800', color: '#fff', marginTop: 4 },
-  totalSub: { fontSize: 13, color: '#bfdbfe', marginTop: 4 },
-  emptyState: { alignItems: 'center', marginTop: 60, gap: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10, gap: 12, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  cardInfo: { flex: 1 },
-  name: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  amount: { fontSize: 20, fontWeight: '800', color: '#16a34a', marginTop: 2 },
-  meta: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  date: { fontSize: 12, color: '#9ca3af' },
-  payBtn: { backgroundColor: '#1d4ed8', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12 },
-  payBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  disabled: { opacity: 0.6 },
-});

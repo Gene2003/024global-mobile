@@ -1,14 +1,38 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   ActivityIndicator, Alert, Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, useThemedStyles } from '../../components/ui';
 
 export default function AdminProducts() {
-  const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    count: { backgroundColor: 'rgba(255,255,255,0.15)', color: t.colors.onHeader, fontWeight: '700' as const, fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' as const },
+    center: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 12 },
+    loadingText: { fontSize: 14, color: t.colors.textMuted },
+    list: { padding: 16, paddingBottom: 40 },
+    empty: { textAlign: 'center' as const, color: t.colors.textMuted, marginTop: 40, fontSize: 15 },
+    card: { backgroundColor: t.colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 6, elevation: 2 },
+    cardRow: { flexDirection: 'row' as const, gap: 12, alignItems: 'center' as const, marginBottom: 12 },
+    productImage: { width: 64, height: 64, borderRadius: 10 },
+    imagePlaceholder: { width: 64, height: 64, borderRadius: 10, backgroundColor: t.colors.surfaceAlt, alignItems: 'center' as const, justifyContent: 'center' as const },
+    info: { flex: 1 },
+    productName: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    vendorName: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    price: { fontSize: 13, fontWeight: '600' as const, color: t.colors.success, marginTop: 4 },
+    cardFooter: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const },
+    badge: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+    badgeText: { fontSize: 12, fontWeight: '700' as const },
+    toggleBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+    toggleText: { fontSize: 13, fontWeight: '700' as const },
+    disabled: { opacity: 0.6 },
+  }));
+
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -47,18 +71,16 @@ export default function AdminProducts() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Product Monitor</Text>
-        <Text style={styles.count}>{products.length}</Text>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Product Monitor"
+        subtitle="Vendor product submissions"
+        right={<Text style={styles.count}>{products.length}</Text>}
+      />
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
+          <ActivityIndicator size="large" color={c.primary} />
           <Text style={styles.loadingText}>Loading products...</Text>
         </View>
       ) : (
@@ -77,7 +99,7 @@ export default function AdminProducts() {
                     <Image source={{ uri: p.image }} style={styles.productImage} />
                   ) : (
                     <View style={styles.imagePlaceholder}>
-                      <Ionicons name="image" size={24} color="#d1d5db" />
+                      <Ionicons name="image" size={24} color={c.placeholder} />
                     </View>
                   )}
                   <View style={styles.info}>
@@ -90,13 +112,13 @@ export default function AdminProducts() {
                 </View>
 
                 <View style={styles.cardFooter}>
-                  <View style={[styles.badge, { backgroundColor: visible ? '#dcfce7' : '#fee2e2' }]}>
+                  <View style={[styles.badge, { backgroundColor: visible ? c.successTint : c.dangerTint }]}>
                     <Ionicons
                       name={visible ? 'eye' : 'eye-off'}
                       size={12}
-                      color={visible ? '#16a34a' : '#dc2626'}
+                      color={visible ? c.success : c.danger}
                     />
-                    <Text style={[styles.badgeText, { color: visible ? '#16a34a' : '#dc2626' }]}>
+                    <Text style={[styles.badgeText, { color: visible ? c.success : c.danger }]}>
                       {visible ? 'Visible' : 'Hidden'}
                     </Text>
                   </View>
@@ -104,22 +126,22 @@ export default function AdminProducts() {
                   <TouchableOpacity
                     style={[
                       styles.toggleBtn,
-                      { backgroundColor: visible ? '#fee2e2' : '#dcfce7' },
+                      { backgroundColor: visible ? c.dangerTint : c.successTint },
                       isBusy && styles.disabled,
                     ]}
                     onPress={() => toggleVisibility(p)}
                     disabled={isBusy}
                   >
                     {isBusy ? (
-                      <ActivityIndicator size="small" color={visible ? '#dc2626' : '#16a34a'} />
+                      <ActivityIndicator size="small" color={visible ? c.danger : c.success} />
                     ) : (
                       <Ionicons
                         name={visible ? 'eye-off' : 'eye'}
                         size={14}
-                        color={visible ? '#dc2626' : '#16a34a'}
+                        color={visible ? c.danger : c.success}
                       />
                     )}
-                    <Text style={[styles.toggleText, { color: visible ? '#dc2626' : '#16a34a' }]}>
+                    <Text style={[styles.toggleText, { color: visible ? c.danger : c.success }]}>
                       {visible ? 'Hide' : 'Show'}
                     </Text>
                   </TouchableOpacity>
@@ -129,32 +151,6 @@ export default function AdminProducts() {
           }}
         />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: '#111827' },
-  count: { backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#6b7280' },
-  list: { padding: 16, paddingBottom: 40 },
-  empty: { textAlign: 'center', color: '#9ca3af', marginTop: 40, fontSize: 15 },
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  cardRow: { flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 12 },
-  productImage: { width: 64, height: 64, borderRadius: 10 },
-  imagePlaceholder: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#f3f4f6', alignItems: 'center', justifyContent: 'center' },
-  info: { flex: 1 },
-  productName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  vendorName: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  price: { fontSize: 13, fontWeight: '600', color: '#16a34a', marginTop: 4 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  badgeText: { fontSize: 12, fontWeight: '700' },
-  toggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
-  toggleText: { fontSize: 13, fontWeight: '700' },
-  disabled: { opacity: 0.6 },
-});

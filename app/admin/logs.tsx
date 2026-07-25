@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, useThemedStyles } from '../../components/ui';
 
 export default function AdminLogs() {
-  const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    list: { flex: 1, padding: 16 },
+    empty: { textAlign: 'center' as const, color: t.colors.textMuted, marginTop: 40, fontSize: 15 },
+    card: { backgroundColor: t.colors.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: t.colors.border },
+    cardTop: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 6 },
+    levelBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+    levelText: { fontSize: 11, fontWeight: '700' as const },
+    date: { fontSize: 11, color: t.colors.textMuted },
+    message: { fontSize: 13, color: t.colors.text, lineHeight: 18 },
+    logUser: { fontSize: 12, color: t.colors.textMuted, marginTop: 4 },
+  }));
+
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,22 +33,17 @@ export default function AdminLogs() {
   }, []);
 
   const levelColor = (level: string) => {
-    if (level === 'ERROR') return { bg: '#fee2e2', text: '#dc2626' };
-    if (level === 'WARNING') return { bg: '#fef9c3', text: '#92400e' };
-    return { bg: '#f3f4f6', text: '#374151' };
+    if (level === 'ERROR') return { bg: c.dangerTint, text: c.danger };
+    if (level === 'WARNING') return { bg: c.goldTint, text: theme.scheme === 'dark' ? c.gold : '#8A6D0B' };
+    return { bg: c.surfaceAlt, text: c.textMuted };
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>System Logs</Text>
-      </View>
+    <Screen>
+      <AppHeader title="System Logs" subtitle="User activity and referral usage" />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1d4ed8" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 40 }} />
       ) : (
         <ScrollView style={styles.list}>
           {logs.length === 0 ? (
@@ -57,22 +65,6 @@ export default function AdminLogs() {
           })}
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  list: { flex: 1, padding: 16 },
-  empty: { textAlign: 'center', color: '#9ca3af', marginTop: 40, fontSize: 15 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 8 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  levelBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  levelText: { fontSize: 11, fontWeight: '700' },
-  date: { fontSize: 11, color: '#9ca3af' },
-  message: { fontSize: 13, color: '#374151', lineHeight: 18 },
-  logUser: { fontSize: 12, color: '#6b7280', marginTop: 4 },
-});

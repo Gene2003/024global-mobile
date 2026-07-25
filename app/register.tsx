@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView, Switch, Linking,
+  View, Text, TouchableOpacity,
+  Alert, Switch, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../lib/api';
+import { useTheme } from '../lib/theme-context';
+import { Screen, AppHeader, Button, Field, ScrollView, useThemedStyles } from '../components/ui';
 
 const COUNTRY_CITY_DATA: Record<string, string[]> = {
   Kenya: ['Nairobi', 'Mombasa', 'Kisumu', 'Eldoret', 'Nakuru', 'Machakos'],
@@ -22,6 +24,10 @@ type Role = 'user' | 'vendor' | 'service_provider';
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useStyles();
+
   const [loading, setLoading] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
@@ -137,173 +143,156 @@ export default function RegisterScreen() {
     : 'Register Now';
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.sub}>Register for 024 Global Connect</Text>
+    <Screen>
+      <AppHeader title="Create Account" />
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.sub}>Register for 024 Global Connect</Text>
 
-      {/* Basic fields */}
-      <Field label="First Name *" value={form.first_name} onChange={(v) => set('first_name', v)} placeholder="First name" />
-      <Field label="Last Name *" value={form.last_name} onChange={(v) => set('last_name', v)} placeholder="Last name" />
-      <Field label="Username *" value={form.username} onChange={(v) => set('username', v)} placeholder="Choose a username" autoCapitalize="none" />
-      <Field label="Email *" value={form.email} onChange={(v) => set('email', v)} placeholder="Your email address" keyboardType="email-address" autoCapitalize="none" />
-      <Field label="Password *" value={form.password} onChange={(v) => set('password', v)} placeholder="At least 8 characters" secureTextEntry />
-      <Field label="Confirm Password *" value={form.confirm_password} onChange={(v) => set('confirm_password', v)} placeholder="Repeat your password" secureTextEntry />
+        {/* Basic fields */}
+        <Field label="First Name *" value={form.first_name} onChangeText={(v) => set('first_name', v)} placeholder="First name" autoCapitalize="words" />
+        <Field label="Last Name *" value={form.last_name} onChangeText={(v) => set('last_name', v)} placeholder="Last name" autoCapitalize="words" />
+        <Field label="Username *" value={form.username} onChangeText={(v) => set('username', v)} placeholder="Choose a username" autoCapitalize="none" />
+        <Field label="Email *" value={form.email} onChangeText={(v) => set('email', v)} placeholder="Your email address" keyboardType="email-address" autoCapitalize="none" />
+        <Field label="Password *" value={form.password} onChangeText={(v) => set('password', v)} placeholder="At least 8 characters" secureTextEntry autoCapitalize="words" />
+        <Field label="Confirm Password *" value={form.confirm_password} onChangeText={(v) => set('confirm_password', v)} placeholder="Repeat your password" secureTextEntry autoCapitalize="words" />
 
-      {/* Country picker */}
-      <Text style={styles.label}>Country</Text>
-      <TouchableOpacity style={styles.picker} onPress={() => setShowCountryPicker(!showCountryPicker)}>
-        <Text style={form.country ? styles.pickerText : styles.pickerPlaceholder}>
-          {form.country || 'Select Country'}
-        </Text>
-        <Ionicons name={showCountryPicker ? 'chevron-up' : 'chevron-down'} size={18} color="#6b7280" />
-      </TouchableOpacity>
-      {showCountryPicker && (
-        <View style={styles.dropdown}>
-          {countryOptions.map((c) => (
-            <TouchableOpacity key={c} style={styles.dropdownItem} onPress={() => { set('country', c); set('city', ''); setShowCountryPicker(false); }}>
-              <Text style={styles.dropdownText}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* City picker */}
-      <Text style={styles.label}>City</Text>
-      <TouchableOpacity style={[styles.picker, !form.country && styles.disabled]} onPress={() => form.country && setShowCityPicker(!showCityPicker)}>
-        <Text style={form.city ? styles.pickerText : styles.pickerPlaceholder}>
-          {form.city || 'Select City'}
-        </Text>
-        <Ionicons name={showCityPicker ? 'chevron-up' : 'chevron-down'} size={18} color="#6b7280" />
-      </TouchableOpacity>
-      {showCityPicker && (
-        <View style={styles.dropdown}>
-          {cityOptions.map((c) => (
-            <TouchableOpacity key={c} style={styles.dropdownItem} onPress={() => { set('city', c); setShowCityPicker(false); }}>
-              <Text style={styles.dropdownText}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* Promotion Methods */}
-      <Text style={styles.label}>Promotion Methods</Text>
-      <View style={styles.checkboxGroup}>
-        {PROMOTION_METHODS.map((m) => (
-          <TouchableOpacity key={m} style={styles.checkboxRow} onPress={() => togglePromoMethod(m)}>
-            <View style={[styles.checkbox, form.promotion_methods.includes(m) && styles.checkboxChecked]}>
-              {form.promotion_methods.includes(m) && <Ionicons name="checkmark" size={14} color="#fff" />}
-            </View>
-            <Text style={styles.checkboxLabel}>{m}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Role */}
-      <Text style={styles.label}>Register as</Text>
-      <View style={styles.roleRow}>
-        {(['user', 'vendor', 'service_provider'] as Role[]).map((r) => (
-          <TouchableOpacity
-            key={r}
-            style={[styles.roleBtn, form.role === r && styles.roleBtnActive]}
-            onPress={() => set('role', r)}
-          >
-            <Text style={[styles.roleBtnText, form.role === r && styles.roleBtnTextActive]}>
-              {r === 'user' ? 'Affiliate' : r === 'vendor' ? 'Vendor' : 'Service Provider'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <Text style={styles.roleHint}>
-        {form.role === 'user' && 'Promote products and earn commission.'}
-        {form.role === 'vendor' && 'Upload products to sell. Requires KES 200 registration fee.'}
-        {form.role === 'service_provider' && 'Offer services to users. Requires KES 200 registration fee.'}
-      </Text>
-
-      {/* Affiliate fields */}
-      {form.role === 'user' && (
-        <>
-          <Field label="Certificate Number *" value={form.certificate_number} onChange={(v) => set('certificate_number', v)} placeholder="Enter your affiliate certificate number" autoCapitalize="none" />
-          <Field label="Social Media Handles" value={form.social_media_handles} onChange={(v) => set('social_media_handles', v)} placeholder="e.g. @yourhandle" autoCapitalize="none" />
-        </>
-      )}
-
-      {/* Vendor fields */}
-      {form.role === 'vendor' && (
-        <>
-          <Text style={styles.label}>Vendor Type *</Text>
-          <SegmentPicker
-            options={[{ label: 'Farmer', value: 'farmer' }, { label: 'Wholesaler', value: 'wholesaler' }, { label: 'Retailer', value: 'retailer' }]}
-            selected={form.vendor_type}
-            onSelect={(v) => set('vendor_type', v)}
-          />
-          <Field label="Phone Number (for buyer contact)" value={form.phone} onChange={(v) => set('phone', v)} placeholder="e.g. 0712345678" keyboardType="phone-pad" />
-          <Field label="Affiliate Certificate Number (optional)" value={form.affiliate_certificate_number} onChange={(v) => set('affiliate_certificate_number', v)} placeholder="If referred by an affiliate" autoCapitalize="none" />
-        </>
-      )}
-
-      {/* Service Provider fields */}
-      {form.role === 'service_provider' && (
-        <>
-          <Text style={styles.label}>Service Provider Type *</Text>
-          <SegmentPicker
-            options={[
-              { label: 'Veterinary', value: 'veterinary' },
-              { label: 'Transporter', value: 'transport' },
-              { label: 'Storage', value: 'storage' },
-            ]}
-            selected={form.service_provider_type}
-            onSelect={(v) => set('service_provider_type', v)}
-          />
-          <Field label="Phone Number (for client contact)" value={form.phone} onChange={(v) => set('phone', v)} placeholder="e.g. 0712345678" keyboardType="phone-pad" />
-          <Field label="Affiliate Certificate Number (optional)" value={form.affiliate_certificate_number} onChange={(v) => set('affiliate_certificate_number', v)} placeholder="If referred by an affiliate" autoCapitalize="none" />
-        </>
-      )}
-
-      {/* Terms */}
-      <TouchableOpacity style={styles.termsRow} onPress={() => set('termsAccepted', !form.termsAccepted)}>
-        <View style={[styles.checkbox, form.termsAccepted && styles.checkboxChecked]}>
-          {form.termsAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
-        </View>
-        <Text style={styles.termsText}>
-          I agree to the{' '}
-          <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.024global.com/terms')}>
-            terms and policies
+        {/* Country picker */}
+        <Text style={styles.label}>Country</Text>
+        <TouchableOpacity style={styles.picker} onPress={() => setShowCountryPicker(!showCountryPicker)}>
+          <Text style={form.country ? styles.pickerText : styles.pickerPlaceholder}>
+            {form.country || 'Select Country'}
           </Text>
+          <Ionicons name={showCountryPicker ? 'chevron-up' : 'chevron-down'} size={18} color={c.textMuted} />
+        </TouchableOpacity>
+        {showCountryPicker && (
+          <View style={styles.dropdown}>
+            {countryOptions.map((co) => (
+              <TouchableOpacity key={co} style={styles.dropdownItem} onPress={() => { set('country', co); set('city', ''); setShowCountryPicker(false); }}>
+                <Text style={styles.dropdownText}>{co}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* City picker */}
+        <Text style={styles.label}>City</Text>
+        <TouchableOpacity style={[styles.picker, !form.country && styles.disabled]} onPress={() => form.country && setShowCityPicker(!showCityPicker)}>
+          <Text style={form.city ? styles.pickerText : styles.pickerPlaceholder}>
+            {form.city || 'Select City'}
+          </Text>
+          <Ionicons name={showCityPicker ? 'chevron-up' : 'chevron-down'} size={18} color={c.textMuted} />
+        </TouchableOpacity>
+        {showCityPicker && (
+          <View style={styles.dropdown}>
+            {cityOptions.map((ci) => (
+              <TouchableOpacity key={ci} style={styles.dropdownItem} onPress={() => { set('city', ci); setShowCityPicker(false); }}>
+                <Text style={styles.dropdownText}>{ci}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Promotion Methods */}
+        <Text style={styles.label}>Promotion Methods</Text>
+        <View style={styles.checkboxGroup}>
+          {PROMOTION_METHODS.map((m) => (
+            <TouchableOpacity key={m} style={styles.checkboxRow} onPress={() => togglePromoMethod(m)}>
+              <View style={[styles.checkbox, form.promotion_methods.includes(m) && styles.checkboxChecked]}>
+                {form.promotion_methods.includes(m) && <Ionicons name="checkmark" size={14} color={c.onPrimary} />}
+              </View>
+              <Text style={styles.checkboxLabel}>{m}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Role */}
+        <Text style={styles.label}>Register as</Text>
+        <View style={styles.roleRow}>
+          {(['user', 'vendor', 'service_provider'] as Role[]).map((r) => (
+            <TouchableOpacity
+              key={r}
+              style={[styles.roleBtn, form.role === r && styles.roleBtnActive]}
+              onPress={() => set('role', r)}
+            >
+              <Text style={[styles.roleBtnText, form.role === r && styles.roleBtnTextActive]}>
+                {r === 'user' ? 'Affiliate' : r === 'vendor' ? 'Vendor' : 'Service Provider'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <Text style={styles.roleHint}>
+          {form.role === 'user' && 'Promote products and earn commission.'}
+          {form.role === 'vendor' && 'Upload products to sell. Requires KES 200 registration fee.'}
+          {form.role === 'service_provider' && 'Offer services to users. Requires KES 200 registration fee.'}
         </Text>
-      </TouchableOpacity>
 
-      {/* Submit */}
-      <TouchableOpacity style={styles.btn} onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>{btnLabel}</Text>}
-      </TouchableOpacity>
+        {/* Affiliate fields */}
+        {form.role === 'user' && (
+          <>
+            <Field label="Certificate Number *" value={form.certificate_number} onChangeText={(v) => set('certificate_number', v)} placeholder="Enter your affiliate certificate number" autoCapitalize="none" />
+            <Field label="Social Media Handles" value={form.social_media_handles} onChangeText={(v) => set('social_media_handles', v)} placeholder="e.g. @yourhandle" autoCapitalize="none" />
+          </>
+        )}
 
-      <TouchableOpacity style={styles.link} onPress={() => router.replace('/login')}>
-        <Text style={styles.linkText}>
-          Already have an account? <Text style={styles.linkBold}>Login</Text>
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
-}
+        {/* Vendor fields */}
+        {form.role === 'vendor' && (
+          <>
+            <Text style={styles.label}>Vendor Type *</Text>
+            <SegmentPicker
+              options={[{ label: 'Farmer', value: 'farmer' }, { label: 'Wholesaler', value: 'wholesaler' }, { label: 'Retailer', value: 'retailer' }]}
+              selected={form.vendor_type}
+              onSelect={(v) => set('vendor_type', v)}
+            />
+            <Field label="Phone Number (for buyer contact)" value={form.phone} onChangeText={(v) => set('phone', v)} placeholder="e.g. 0712345678" keyboardType="phone-pad" autoCapitalize="words" />
+            <Field label="Affiliate Certificate Number (optional)" value={form.affiliate_certificate_number} onChangeText={(v) => set('affiliate_certificate_number', v)} placeholder="If referred by an affiliate" autoCapitalize="none" />
+          </>
+        )}
 
-function Field({ label, value, onChange, placeholder, keyboardType, autoCapitalize, secureTextEntry }: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; keyboardType?: any; autoCapitalize?: any; secureTextEntry?: boolean;
-}) {
-  return (
-    <>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize ?? 'words'}
-        secureTextEntry={secureTextEntry}
-      />
-    </>
+        {/* Service Provider fields */}
+        {form.role === 'service_provider' && (
+          <>
+            <Text style={styles.label}>Service Provider Type *</Text>
+            <SegmentPicker
+              options={[
+                { label: 'Veterinary', value: 'veterinary' },
+                { label: 'Transporter', value: 'transport' },
+                { label: 'Storage', value: 'storage' },
+              ]}
+              selected={form.service_provider_type}
+              onSelect={(v) => set('service_provider_type', v)}
+            />
+            <Field label="Phone Number (for client contact)" value={form.phone} onChangeText={(v) => set('phone', v)} placeholder="e.g. 0712345678" keyboardType="phone-pad" autoCapitalize="words" />
+            <Field label="Affiliate Certificate Number (optional)" value={form.affiliate_certificate_number} onChangeText={(v) => set('affiliate_certificate_number', v)} placeholder="If referred by an affiliate" autoCapitalize="none" />
+          </>
+        )}
+
+        {/* Terms */}
+        <View style={styles.termsRow}>
+          <Switch
+            value={form.termsAccepted}
+            onValueChange={(v) => set('termsAccepted', v)}
+            trackColor={{ false: c.border, true: c.primary }}
+            thumbColor={c.surface}
+          />
+          <Text style={styles.termsText}>
+            I agree to the{' '}
+            <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.024global.com/terms')}>
+              terms and policies
+            </Text>
+          </Text>
+        </View>
+
+        {/* Submit */}
+        <Button title={btnLabel} onPress={handleSubmit} loading={loading} style={{ marginTop: 24 }} />
+
+        <TouchableOpacity style={styles.link} onPress={() => router.replace('/login')}>
+          <Text style={styles.linkText}>
+            Already have an account? <Text style={styles.linkBold}>Login</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </Screen>
   );
 }
 
@@ -312,6 +301,7 @@ function SegmentPicker({ options, selected, onSelect }: {
   selected: string;
   onSelect: (v: string) => void;
 }) {
+  const styles = useStyles();
   return (
     <View style={styles.segmentRow}>
       {options.map((o) => (
@@ -329,41 +319,43 @@ function SegmentPicker({ options, selected, onSelect }: {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#f9fafb', padding: 24, paddingTop: 48, paddingBottom: 48 },
-  title: { fontSize: 26, fontWeight: '800', color: '#111827', marginBottom: 6 },
-  sub: { fontSize: 14, color: '#6b7280', marginBottom: 24 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 14, marginBottom: 4 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 13, fontSize: 15, color: '#111827' },
-  picker: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 13, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pickerText: { fontSize: 15, color: '#111827' },
-  pickerPlaceholder: { fontSize: 15, color: '#9ca3af' },
-  disabled: { opacity: 0.5 },
-  dropdown: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, marginTop: 2, zIndex: 99 },
-  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  dropdownText: { fontSize: 15, color: '#111827' },
-  checkboxGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 6, width: '47%' },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#d1d5db', alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' },
-  checkboxLabel: { fontSize: 14, color: '#374151' },
-  roleRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  roleBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: '#d1d5db', alignItems: 'center' },
-  roleBtnActive: { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' },
-  roleBtnText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  roleBtnTextActive: { color: '#fff' },
-  roleHint: { fontSize: 12, color: '#6b7280', marginTop: 6, fontStyle: 'italic' },
-  segmentRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  segmentBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: '#d1d5db', alignItems: 'center' },
-  segmentBtnActive: { backgroundColor: '#1d4ed8', borderColor: '#1d4ed8' },
-  segmentText: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  segmentTextActive: { color: '#fff' },
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 20 },
-  termsText: { fontSize: 14, color: '#374151', flex: 1 },
-  termsLink: { color: '#1d4ed8', textDecorationLine: 'underline' },
-  btn: { backgroundColor: '#1d4ed8', paddingVertical: 15, borderRadius: 12, alignItems: 'center', marginTop: 24 },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  link: { alignItems: 'center', marginTop: 16 },
-  linkText: { color: '#6b7280', fontSize: 14 },
-  linkBold: { color: '#1d4ed8', fontWeight: '700' },
-});
+function useStyles() {
+  return useThemedStyles((t) => {
+    const c = t.colors;
+    return {
+      container: { flexGrow: 1, padding: 24, paddingTop: 24, paddingBottom: 48 },
+      title: { fontSize: 26, fontWeight: '800' as const, color: c.text, marginBottom: 6 },
+      sub: { fontSize: 14, color: c.textMuted, marginBottom: 24 },
+      label: { fontSize: 13, fontWeight: '600' as const, color: c.textMuted, marginTop: 14, marginBottom: 4 },
+      picker: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 10, padding: 13, flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+      pickerText: { fontSize: 15, color: c.text },
+      pickerPlaceholder: { fontSize: 15, color: c.placeholder },
+      disabled: { opacity: 0.5 },
+      dropdown: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 10, marginTop: 2, zIndex: 99 },
+      dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: c.border },
+      dropdownText: { fontSize: 15, color: c.text },
+      checkboxGroup: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginTop: 4 },
+      checkboxRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, width: '47%' as const },
+      checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: c.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+      checkboxChecked: { backgroundColor: c.primary, borderColor: c.primary },
+      checkboxLabel: { fontSize: 14, color: c.text },
+      roleRow: { flexDirection: 'row' as const, gap: 8, marginTop: 4 },
+      roleBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: c.border, alignItems: 'center' as const },
+      roleBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
+      roleBtnText: { fontSize: 12, fontWeight: '600' as const, color: c.textMuted },
+      roleBtnTextActive: { color: c.onPrimary },
+      roleHint: { fontSize: 12, color: c.textMuted, marginTop: 6, fontStyle: 'italic' as const },
+      segmentRow: { flexDirection: 'row' as const, gap: 8, marginTop: 4 },
+      segmentBtn: { flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1.5, borderColor: c.border, alignItems: 'center' as const },
+      segmentBtnActive: { backgroundColor: c.primary, borderColor: c.primary },
+      segmentText: { fontSize: 12, fontWeight: '600' as const, color: c.textMuted },
+      segmentTextActive: { color: c.onPrimary },
+      termsRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, marginTop: 20 },
+      termsText: { fontSize: 14, color: c.text, flex: 1 },
+      termsLink: { color: c.primary, textDecorationLine: 'underline' as const },
+      link: { alignItems: 'center' as const, marginTop: 16 },
+      linkText: { color: c.textMuted, fontSize: 14 },
+      linkBold: { color: c.primary, fontWeight: '700' as const },
+    };
+  });
+}

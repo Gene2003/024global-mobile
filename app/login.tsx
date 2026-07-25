@@ -1,11 +1,24 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { Text, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveTokens, saveUser } from '../lib/auth';
+import { useTheme } from '../lib/theme-context';
+import { Screen, AppHeader, Button, Field, ScrollView, useThemedStyles } from '../components/ui';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    container: { flexGrow: 1, padding: 24, justifyContent: 'center' as const },
+    title: { fontSize: 28, fontWeight: '800' as const, color: t.colors.text, marginBottom: 8 },
+    sub: { fontSize: 14, color: t.colors.textMuted, marginBottom: 32 },
+    link: { alignItems: 'center' as const, marginTop: 16 },
+    linkText: { color: t.colors.textMuted, fontSize: 14 },
+    linkBold: { color: t.colors.primary, fontWeight: '700' as const },
+  }));
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,51 +47,38 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Welcome Back</Text>
-      <Text style={styles.sub}>Login to your 024 Global Connect account</Text>
+    <Screen>
+      <AppHeader title="Login" />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Welcome Back</Text>
+        <Text style={styles.sub}>Login to your 024 Global Connect account</Text>
 
-      <View style={styles.form}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
+        <Field
+          label="Email"
           placeholder="Enter your email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
+        <Field
+          label="Password"
           placeholder="Enter your password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
 
-        <TouchableOpacity style={styles.btn} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Login</Text>}
+        <Button title="Login" onPress={handleLogin} loading={loading} style={{ marginTop: 12 }} />
+
+        <TouchableOpacity style={styles.link} onPress={() => router.push('/forgot-password' as any)}>
+          <Text style={styles.linkBold}>Forgot password?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.link} onPress={() => router.push('/register')}>
           <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkBold}>Register</Text></Text>
         </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: '#f9fafb', padding: 24, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: '#111827', marginBottom: 8 },
-  sub: { fontSize: 14, color: '#6b7280', marginBottom: 32 },
-  form: { gap: 8 },
-  label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4, marginTop: 8 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 14, fontSize: 15, color: '#111827' },
-  btn: { backgroundColor: '#1d4ed8', paddingVertical: 15, borderRadius: 12, alignItems: 'center', marginTop: 20 },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  link: { alignItems: 'center', marginTop: 16 },
-  linkText: { color: '#6b7280', fontSize: 14 },
-  linkBold: { color: '#1d4ed8', fontWeight: '700' },
-});

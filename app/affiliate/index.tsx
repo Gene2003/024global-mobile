@@ -1,12 +1,28 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { getUser } from '../../lib/auth';
+import {
+  Screen,
+  AppHeader,
+  ScrollView,
+  Segmented,
+  StatCard,
+  Button,
+  Card,
+  Badge,
+  EmptyState,
+  Loader,
+  useThemedStyles,
+} from '../../components/ui';
+
+type StatTone = 'success' | 'primary' | 'gold' | 'info';
 
 export default function AffiliateDashboard() {
   const router = useRouter();
+  const styles = useStyles();
+
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [tab, setTab] = useState<'stats' | 'referrals'>('stats');
@@ -34,133 +50,105 @@ export default function AffiliateDashboard() {
     }
   };
 
-  const statCards = stats ? [
-    { label: 'Total Commission', value: `KES ${stats.total_commission || 0}`, icon: 'cash', color: '#16a34a', bg: '#dcfce7' },
-    { label: 'Total Referrals', value: stats.total_referrals || 0, icon: 'people', color: '#1d4ed8', bg: '#dbeafe' },
-    { label: 'Purchases', value: stats.total_purchases || 0, icon: 'cart', color: '#d97706', bg: '#fef9c3' },
-    { label: 'Conversion Rate', value: `${stats.conversion_rate || 0}%`, icon: 'trending-up', color: '#7c3aed', bg: '#ede9fe' },
-  ] : [];
+  const statCards: { label: string; value: string | number; icon: any; tone: StatTone }[] = stats
+    ? [
+        { label: 'Total Commission', value: `KES ${stats.total_commission || 0}`, icon: 'cash', tone: 'success' },
+        { label: 'Total Referrals', value: stats.total_referrals || 0, icon: 'people', tone: 'primary' },
+        { label: 'Purchases', value: stats.total_purchases || 0, icon: 'cart', tone: 'gold' },
+        { label: 'Conversion Rate', value: `${stats.conversion_rate || 0}%`, icon: 'trending-up', tone: 'info' },
+      ]
+    : [];
 
-  const statusColor = (status: string) => {
-    if (status === 'approved') return { bg: '#dcfce7', text: '#16a34a' };
-    if (status === 'paid') return { bg: '#dbeafe', text: '#1d4ed8' };
-    return { bg: '#fef9c3', text: '#92400e' };
+  const statusTone = (status: string): 'success' | 'info' | 'gold' => {
+    if (status === 'approved') return 'success';
+    if (status === 'paid') return 'info';
+    return 'gold';
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Affiliate Dashboard</Text>
-          {user && <Text style={styles.subtitle}>Welcome back, {user.first_name}!</Text>}
-        </View>
-      </View>
+    <Screen>
+      <AppHeader
+        title="Affiliate Dashboard"
+        subtitle={user ? `Welcome back, ${user.first_name}!` : undefined}
+        showThemeToggle
+      />
 
-      <View style={styles.tabs}>
-        {(['stats', 'referrals'] as const).map((t) => (
-          <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
-            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-              {t === 'stats' ? 'Commission Stats' : 'My Referrals'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <Segmented
+        options={[
+          { key: 'stats', label: 'Commission Stats' },
+          { key: 'referrals', label: 'My Referrals' },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
 
       {loading ? (
-        <ActivityIndicator size="large" color="#1d4ed8" style={{ marginTop: 40 }} />
+        <Loader />
       ) : tab === 'stats' ? (
-        <ScrollView style={styles.list}>
+        <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           <View style={styles.statsGrid}>
             {statCards.map((s) => (
-              <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg }]}>
-                <View style={[styles.statIcon, { backgroundColor: s.bg }]}>
-                  <Ionicons name={s.icon as any} size={22} color={s.color} />
-                </View>
-                <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
-                <Text style={[styles.statLabel, { color: s.color }]}>{s.label}</Text>
-              </View>
+              <StatCard key={s.label} value={s.value} label={s.label} icon={s.icon} tone={s.tone} style={styles.statCard} />
             ))}
           </View>
 
-          <TouchableOpacity style={styles.verifyBtn} onPress={() => router.push('/affiliate/verify-farmer')}>
-            <Ionicons name="shield-checkmark" size={18} color="#fff" />
-            <Text style={styles.browseBtnText}>Verify a Farmer</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.browseBtn} onPress={() => router.push('/(tabs)/products')}>
-            <Ionicons name="storefront" size={18} color="#fff" />
-            <Text style={styles.browseBtnText}>Browse Products to Promote</Text>
-          </TouchableOpacity>
+          <Button
+            title="Verify a Farmer"
+            icon="shield-checkmark"
+            variant="success"
+            style={styles.actionBtn}
+            onPress={() => router.push('/affiliate/verify-farmer')}
+          />
+          <Button
+            title="Browse Products to Promote"
+            icon="storefront"
+            style={styles.actionBtn}
+            onPress={() => router.push('/(tabs)/products')}
+          />
         </ScrollView>
       ) : (
-        <ScrollView style={styles.list}>
+        <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
           {referrals.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color="#d1d5db" />
-              <Text style={styles.emptyTitle}>No referrals yet</Text>
-              <Text style={styles.emptyText}>Start promoting products to earn commission</Text>
-            </View>
-          ) : referrals.map((r, i) => {
-            const colors = statusColor(r.status);
-            return (
-              <View key={i} style={styles.referralCard}>
+            <EmptyState icon="people-outline" text="No referrals yet. Start promoting products to earn commission." />
+          ) : (
+            referrals.map((r, i) => (
+              <Card key={i} style={styles.referralCard}>
                 <View style={styles.referralTop}>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={styles.referralProduct}>{r.product_name || 'Product'}</Text>
                     <Text style={styles.referralMeta}>Order #{r.order_id || r.order}</Text>
-                    <Text style={styles.referralDate}>{r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}</Text>
+                    <Text style={styles.referralDate}>
+                      {r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}
+                    </Text>
                   </View>
-                  <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-                    <Text style={[styles.badgeText, { color: colors.text }]}>{r.status?.toUpperCase()}</Text>
-                  </View>
+                  <Badge label={r.status?.toUpperCase()} tone={statusTone(r.status)} />
                 </View>
                 <View style={styles.referralAmounts}>
                   <Text style={styles.purchaseAmt}>Purchase: KES {r.purchase_amount}</Text>
                   <Text style={styles.commissionAmt}>Commission: KES {r.commission_earned}</Text>
                 </View>
-              </View>
-            );
-          })}
+              </Card>
+            ))
+          )}
         </ScrollView>
       )}
-    </View>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 13, color: '#6b7280' },
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2, borderBottomColor: '#1d4ed8' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
-  tabTextActive: { color: '#1d4ed8' },
-  list: { flex: 1, padding: 16 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
-  statCard: { flex: 1, minWidth: '45%', borderRadius: 14, padding: 16, alignItems: 'center', gap: 6 },
-  statIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  browseBtn: { backgroundColor: '#1d4ed8', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 8 },
-  verifyBtn: { backgroundColor: '#16a34a', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 8 },
-  browseBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  emptyState: { alignItems: 'center', marginTop: 60, gap: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center' },
-  referralCard: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 10 },
-  referralTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  referralProduct: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  referralMeta: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  referralDate: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontWeight: '700' },
-  referralAmounts: { flexDirection: 'row', justifyContent: 'space-between' },
-  purchaseAmt: { fontSize: 13, color: '#6b7280' },
-  commissionAmt: { fontSize: 13, fontWeight: '700', color: '#16a34a' },
-});
+const useStyles = () =>
+  useThemedStyles((t) => ({
+    list: { flex: 1 },
+    listContent: { padding: 16, paddingBottom: 40 },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
+    statCard: { minWidth: '45%' },
+    actionBtn: { marginTop: 8 },
+    referralCard: { marginBottom: 10 },
+    referralTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+    referralProduct: { fontSize: 15, fontWeight: '700', color: t.colors.text },
+    referralMeta: { fontSize: 13, color: t.colors.textMuted, marginTop: 2 },
+    referralDate: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    referralAmounts: { flexDirection: 'row', justifyContent: 'space-between' },
+    purchaseAmt: { fontSize: 13, color: t.colors.textMuted },
+    commissionAmt: { fontSize: 13, fontWeight: '700', color: t.colors.success },
+  }));

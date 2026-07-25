@@ -1,14 +1,45 @@
 import { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, FlatList, TouchableOpacity,
   ActivityIndicator, TextInput, Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, useThemedStyles } from '../../components/ui';
 
 export default function AdminUsers() {
-  const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    count: { backgroundColor: 'rgba(255,255,255,0.15)', color: t.colors.onHeader, fontWeight: '700' as const, fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' as const },
+    searchRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, backgroundColor: t.colors.surface, margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, borderColor: t.colors.border, paddingHorizontal: 12 },
+    searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: t.colors.text },
+    filterScroll: { flexGrow: 0, marginBottom: 4 },
+    filterRow: { flexDirection: 'row' as const, paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+    filterBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: t.colors.surfaceAlt },
+    filterBtnActive: { backgroundColor: t.colors.primary },
+    filterText: { fontSize: 13, fontWeight: '600' as const, color: t.colors.textMuted },
+    filterTextActive: { color: t.colors.onPrimary },
+    center: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 12 },
+    loadingText: { fontSize: 14, color: t.colors.textMuted },
+    list: { padding: 16, paddingBottom: 40 },
+    empty: { textAlign: 'center' as const, color: t.colors.textMuted, marginTop: 40, fontSize: 15 },
+    card: { backgroundColor: t.colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: t.colors.border, shadowColor: t.colors.shadow, shadowOpacity: 1, shadowRadius: 6, elevation: 2 },
+    cardHeader: { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 10, marginBottom: 12 },
+    userAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: t.colors.infoTint, alignItems: 'center' as const, justifyContent: 'center' as const },
+    userInfo: { flex: 1 },
+    userName: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text },
+    userEmail: { fontSize: 13, color: t.colors.textMuted, marginTop: 1 },
+    userMeta: { fontSize: 12, color: t.colors.textMuted, marginTop: 2 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 11, fontWeight: '700' as const },
+    actions: { flexDirection: 'row' as const, gap: 8 },
+    actionBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 6, paddingVertical: 10, borderRadius: 10 },
+    actionBtnDisabled: { opacity: 0.6 },
+    actionText: { fontSize: 13, fontWeight: '700' as const },
+  }));
+
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -95,18 +126,16 @@ export default function AdminUsers() {
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>User Management</Text>
-        <Text style={styles.count}>{users.length}</Text>
-      </View>
+    <Screen>
+      <AppHeader
+        title="User Management"
+        subtitle="Manage registered users"
+        right={<Text style={styles.count}>{users.length}</Text>}
+      />
 
       {/* Search */}
       <View style={styles.searchRow}>
-        <Ionicons name="search" size={18} color="#9ca3af" />
+        <Ionicons name="search" size={18} color={c.placeholder} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search username or email..."
@@ -114,11 +143,11 @@ export default function AdminUsers() {
           onChangeText={setSearch}
           onSubmitEditing={() => fetchUsers()}
           returnKeyType="search"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={c.placeholder}
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => { setSearch(''); fetchUsers(); }}>
-            <Ionicons name="close-circle" size={18} color="#9ca3af" />
+            <Ionicons name="close-circle" size={18} color={c.placeholder} />
           </TouchableOpacity>
         )}
       </View>
@@ -145,7 +174,7 @@ export default function AdminUsers() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1d4ed8" />
+          <ActivityIndicator size="large" color={c.primary} />
           <Text style={styles.loadingText}>Loading users...</Text>
         </View>
       ) : (
@@ -160,7 +189,7 @@ export default function AdminUsers() {
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
                   <View style={styles.userAvatar}>
-                    <Ionicons name="person" size={20} color="#1d4ed8" />
+                    <Ionicons name="person" size={20} color={c.primary} />
                   </View>
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>{u.first_name} {u.last_name}</Text>
@@ -169,8 +198,8 @@ export default function AdminUsers() {
                       @{u.username} · {u.role === 'user' ? 'Affiliate' : u.role?.replace('_', ' ')}
                     </Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: u.is_active ? '#dcfce7' : '#fee2e2' }]}>
-                    <Text style={[styles.statusText, { color: u.is_active ? '#16a34a' : '#dc2626' }]}>
+                  <View style={[styles.statusBadge, { backgroundColor: u.is_active ? c.successTint : c.dangerTint }]}>
+                    <Text style={[styles.statusText, { color: u.is_active ? c.success : c.danger }]}>
                       {u.is_active ? 'Active' : 'Inactive'}
                     </Text>
                   </View>
@@ -180,33 +209,33 @@ export default function AdminUsers() {
                   <TouchableOpacity
                     style={[
                       styles.actionBtn,
-                      { backgroundColor: u.is_active ? '#fee2e2' : '#dcfce7' },
+                      { backgroundColor: u.is_active ? c.dangerTint : c.successTint },
                       isBusy && styles.actionBtnDisabled,
                     ]}
                     onPress={() => toggleStatus(u)}
                     disabled={isBusy}
                   >
                     {isBusy ? (
-                      <ActivityIndicator size="small" color={u.is_active ? '#dc2626' : '#16a34a'} />
+                      <ActivityIndicator size="small" color={u.is_active ? c.danger : c.success} />
                     ) : (
                       <Ionicons
                         name={u.is_active ? 'close-circle' : 'checkmark-circle'}
                         size={16}
-                        color={u.is_active ? '#dc2626' : '#16a34a'}
+                        color={u.is_active ? c.danger : c.success}
                       />
                     )}
-                    <Text style={[styles.actionText, { color: u.is_active ? '#dc2626' : '#16a34a' }]}>
+                    <Text style={[styles.actionText, { color: u.is_active ? c.danger : c.success }]}>
                       {u.is_active ? 'Deactivate' : 'Activate'}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#fee2e2' }, isBusy && styles.actionBtnDisabled]}
+                    style={[styles.actionBtn, { backgroundColor: c.dangerTint }, isBusy && styles.actionBtnDisabled]}
                     onPress={() => deleteUser(u)}
                     disabled={isBusy}
                   >
-                    <Ionicons name="trash" size={16} color="#dc2626" />
-                    <Text style={[styles.actionText, { color: '#dc2626' }]}>Delete</Text>
+                    <Ionicons name="trash" size={16} color={c.danger} />
+                    <Text style={[styles.actionText, { color: c.danger }]}>Delete</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -214,39 +243,6 @@ export default function AdminUsers() {
           }}
         />
       )}
-    </View>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  back: { padding: 4 },
-  title: { flex: 1, fontSize: 20, fontWeight: '800', color: '#111827' },
-  count: { backgroundColor: '#eff6ff', color: '#1d4ed8', fontWeight: '700', fontSize: 13, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', margin: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb', paddingHorizontal: 12 },
-  searchInput: { flex: 1, paddingVertical: 11, fontSize: 15, color: '#111827' },
-  filterScroll: { flexGrow: 0, marginBottom: 4 },
-  filterRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
-  filterBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#e5e7eb' },
-  filterBtnActive: { backgroundColor: '#1d4ed8' },
-  filterText: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  filterTextActive: { color: '#fff' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { fontSize: 14, color: '#6b7280' },
-  list: { padding: 16, paddingBottom: 40 },
-  empty: { textAlign: 'center', color: '#9ca3af', marginTop: 40, fontSize: 15 },
-  card: { backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
-  userAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center' },
-  userInfo: { flex: 1 },
-  userName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  userEmail: { fontSize: 13, color: '#6b7280', marginTop: 1 },
-  userMeta: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: 8 },
-  actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10 },
-  actionBtnDisabled: { opacity: 0.6 },
-  actionText: { fontSize: 13, fontWeight: '700' },
-});

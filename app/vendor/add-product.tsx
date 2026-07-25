@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { getUser } from '../../lib/auth';
+import { useTheme } from '../../lib/theme-context';
+import { Screen, AppHeader, Field, Button, useThemedStyles } from '../../components/ui';
 
 const CATEGORIES = [
   { label: 'Farm Products', value: 'farm_products', isFarm: true },
@@ -20,6 +22,25 @@ const CATEGORIES = [
 
 export default function AddProduct() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const styles = useThemedStyles((t) => ({
+    content: { paddingBottom: 40 },
+    form: { padding: 16 },
+    label: { fontSize: 13, fontWeight: '600' as const, color: t.colors.textMuted, marginBottom: 6 },
+    sectionLabel: { fontSize: 14, fontWeight: '700' as const, color: t.colors.primary, marginTop: 20, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: t.colors.border, paddingBottom: 4 },
+    picker: { backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border, borderRadius: t.radius.md, padding: 13, flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+    pickerText: { fontSize: 15, color: t.colors.text },
+    pickerPlaceholder: { fontSize: 15, color: t.colors.placeholder },
+    dropdown: { backgroundColor: t.colors.surface, borderWidth: 1, borderColor: t.colors.border, borderRadius: t.radius.md, marginTop: 4 },
+    dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: t.colors.border, flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+    dropdownItemActive: { backgroundColor: t.colors.infoTint },
+    dropdownText: { fontSize: 15, color: t.colors.text },
+    dropdownTextActive: { fontSize: 15, color: t.colors.info, fontWeight: '700' as const },
+    farmTag: { fontSize: 11, color: t.colors.success, fontWeight: '700' as const, backgroundColor: t.colors.successTint, paddingHorizontal: 6, paddingVertical: 2, borderRadius: t.radius.sm },
+    multiline: { minHeight: 80, textAlignVertical: 'top' as const },
+  }));
+
   const [loading, setLoading] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [form, setForm] = useState({
@@ -88,95 +109,55 @@ export default function AddProduct() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.back}>
-          <Ionicons name="arrow-back" size={22} color="#111827" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Add Product</Text>
-      </View>
+    <Screen>
+      <AppHeader title="Add Product" />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.form}>
+          <Field label="Product Name *" value={form.name} onChangeText={(v) => set('name', v)} placeholder="e.g. Fresh Maize" />
+          <Field label="Description" value={form.description} onChangeText={(v) => set('description', v)} placeholder="Describe your product" multiline numberOfLines={3} style={styles.multiline} />
 
-      <View style={styles.form}>
-        <Field label="Product Name *" value={form.name} onChange={(v) => set('name', v)} placeholder="e.g. Fresh Maize" />
-        <Field label="Description" value={form.description} onChange={(v) => set('description', v)} placeholder="Describe your product" multiline />
+          {/* Category */}
+          <Text style={styles.label}>Category *</Text>
+          <TouchableOpacity style={styles.picker} onPress={() => setShowCatPicker(!showCatPicker)}>
+            <Text style={selectedCat ? styles.pickerText : styles.pickerPlaceholder}>
+              {selectedCat?.label || 'Select Category'}
+            </Text>
+            <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color={c.textMuted} />
+          </TouchableOpacity>
+          {showCatPicker && (
+            <View style={styles.dropdown}>
+              {CATEGORIES.map((cat) => {
+                const active = cat.value === form.category;
+                return (
+                  <TouchableOpacity
+                    key={cat.value}
+                    style={[styles.dropdownItem, active && styles.dropdownItemActive]}
+                    onPress={() => { set('category', cat.value); setShowCatPicker(false); }}
+                  >
+                    <Text style={active ? styles.dropdownTextActive : styles.dropdownText}>{cat.label}</Text>
+                    {cat.isFarm && <Text style={styles.farmTag}>Farm</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
-        {/* Category */}
-        <Text style={styles.label}>Category *</Text>
-        <TouchableOpacity style={styles.picker} onPress={() => setShowCatPicker(!showCatPicker)}>
-          <Text style={selectedCat ? styles.pickerText : styles.pickerPlaceholder}>
-            {selectedCat?.label || 'Select Category'}
-          </Text>
-          <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color="#6b7280" />
-        </TouchableOpacity>
-        {showCatPicker && (
-          <View style={styles.dropdown}>
-            {CATEGORIES.map((c) => (
-              <TouchableOpacity key={c.value} style={styles.dropdownItem}
-                onPress={() => { set('category', c.value); setShowCatPicker(false); }}>
-                <Text style={styles.dropdownText}>{c.label}</Text>
-                {c.isFarm && <Text style={styles.farmTag}>Farm</Text>}
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+          {/* Pricing */}
+          <Text style={styles.sectionLabel}>Pricing (KES)</Text>
+          <Field label="Farmer Price" value={form.farmer_price} onChangeText={(v) => set('farmer_price', v)} placeholder="0" keyboardType="numeric" />
+          <Field label="Wholesaler Price" value={form.wholesaler_price} onChangeText={(v) => set('wholesaler_price', v)} placeholder="0" keyboardType="numeric" />
+          <Field label="Retailer Price" value={form.retailer_price} onChangeText={(v) => set('retailer_price', v)} placeholder="0" keyboardType="numeric" />
 
-        {/* Pricing */}
-        <Text style={styles.sectionLabel}>Pricing (KES)</Text>
-        <Field label="Farmer Price" value={form.farmer_price} onChange={(v) => set('farmer_price', v)} placeholder="0" keyboardType="numeric" />
-        <Field label="Wholesaler Price" value={form.wholesaler_price} onChange={(v) => set('wholesaler_price', v)} placeholder="0" keyboardType="numeric" />
-        <Field label="Retailer Price" value={form.retailer_price} onChange={(v) => set('retailer_price', v)} placeholder="0" keyboardType="numeric" />
+          {/* Stock */}
+          {isFarm ? (
+            <Field label="Quantity (kg) *" value={form.quantity_kg} onChangeText={(v) => set('quantity_kg', v)} placeholder="Minimum depends on vendor type" keyboardType="numeric" />
+          ) : (
+            <Field label="Stock (units) *" value={form.stock} onChangeText={(v) => set('stock', v)} placeholder="Number of units available" keyboardType="numeric" />
+          )}
 
-        {/* Stock */}
-        {isFarm ? (
-          <Field label="Quantity (kg) *" value={form.quantity_kg} onChange={(v) => set('quantity_kg', v)} placeholder="Minimum depends on vendor type" keyboardType="numeric" />
-        ) : (
-          <Field label="Stock (units) *" value={form.stock} onChange={(v) => set('stock', v)} placeholder="Number of units available" keyboardType="numeric" />
-        )}
-
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Add Product</Text>}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <Button title="Add Product" onPress={handleSubmit} loading={loading} disabled={loading} style={{ marginTop: 14 }} />
+        </View>
+      </ScrollView>
+    </Screen>
   );
 }
-
-function Field({ label, value, onChange, placeholder, keyboardType, multiline }: any) {
-  return (
-    <>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[styles.input, multiline && styles.inputMultiline]}
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
-        keyboardType={keyboardType}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-      />
-    </>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  content: { paddingBottom: 40 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 20, paddingTop: 56, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb', marginBottom: 8 },
-  back: { padding: 4 },
-  title: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  form: { padding: 16 },
-  label: { fontSize: 13, fontWeight: '600', color: '#374151', marginTop: 14, marginBottom: 4 },
-  sectionLabel: { fontSize: 14, fontWeight: '700', color: '#1d4ed8', marginTop: 20, marginBottom: 4, borderBottomWidth: 1, borderBottomColor: '#dbeafe', paddingBottom: 4 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 13, fontSize: 15, color: '#111827' },
-  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-  picker: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, padding: 13, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pickerText: { fontSize: 15, color: '#111827' },
-  pickerPlaceholder: { fontSize: 15, color: '#9ca3af' },
-  dropdown: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, marginTop: 2 },
-  dropdownItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dropdownText: { fontSize: 15, color: '#111827' },
-  farmTag: { fontSize: 11, color: '#16a34a', fontWeight: '700', backgroundColor: '#dcfce7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  submitBtn: { backgroundColor: '#1d4ed8', paddingVertical: 15, borderRadius: 12, alignItems: 'center', marginTop: 28 },
-  submitText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-});

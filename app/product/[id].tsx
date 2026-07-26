@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { View, Text, Image, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, Image, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { addToCart } from '../../lib/cart';
-import { Screen, AppHeader, Button, Field, Loader, useThemedStyles } from '../../components/ui';
+import { isLoggedIn } from '../../lib/auth';
+import { Screen, AppHeader, Button, Loader, useThemedStyles } from '../../components/ui';
+import { useTheme } from '../../lib/theme-context';
 
 /** API returns farmer/wholesaler/retailer prices; `price` may be absent on GET. */
 const priceOf = (p: any): number =>
@@ -12,62 +15,52 @@ const priceOf = (p: any): number =>
 export default function ProductDetail() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { theme } = useTheme();
+  const c = theme.colors;
+
   const styles = useThemedStyles((t) => ({
-    body: { padding: 20 },
     image: { width: '100%' as const, height: 260 },
-    name: { fontSize: 22, fontWeight: '800' as const, color: t.colors.text, marginBottom: 8 },
-    price: { fontSize: 24, fontWeight: '800' as const, color: t.colors.success, marginBottom: 4 },
-    vendor: { fontSize: 13, color: t.colors.textMuted, marginBottom: 2 },
-    stock: { fontSize: 13, color: t.colors.success, marginBottom: 12 },
-    descLabel: { fontSize: 15, fontWeight: '700' as const, color: t.colors.text, marginBottom: 4 },
-    desc: { fontSize: 14, color: t.colors.textMuted, lineHeight: 22, marginBottom: 16 },
-    divider: { borderTopWidth: 1, borderTopColor: t.colors.border, marginVertical: 16 },
-    sectionTitle: { fontSize: 18, fontWeight: '700' as const, color: t.colors.text, marginBottom: 12 },
+    placeholder: {
+      width: '100%' as const,
+      height: 260,
+      backgroundColor: t.colors.surfaceAlt,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    body: { padding: 20, gap: 12 },
+    name: { fontSize: 24, fontWeight: '800' as const, color: t.colors.text },
+    price: { fontSize: 24, fontWeight: '800' as const, color: t.colors.success },
+    metaRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6 },
+    metaText: { fontSize: 14, color: t.colors.text },
+    locationText: { fontSize: 14, color: t.colors.textMuted },
+    qtyLabel: { fontSize: 13, fontWeight: '700' as const, color: t.colors.textMuted, marginBottom: 6 },
+    qtyRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 18 },
+    qtyBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.colors.primary,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+    },
+    qtyValue: { fontSize: 20, fontWeight: '800' as const, color: t.colors.text, minWidth: 40, textAlign: 'center' as const },
+    divider: { borderTopWidth: 1, borderTopColor: t.colors.border, marginVertical: 4 },
+    descHeading: { fontSize: 18, fontWeight: '800' as const, color: t.colors.text, marginBottom: 6 },
+    desc: { fontSize: 14, color: t.colors.textMuted, lineHeight: 22 },
+    actions: { gap: 12, marginTop: 8, marginBottom: 32 },
     notFound: { color: t.colors.text, fontSize: 15 },
   }));
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [quantity, setQuantity] = useState('1');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [email, setEmail] = useState('');
-  const [goodsDesc, setGoodsDesc] = useState('');
-  const [buying, setBuying] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    api.get(`/products/${id}/`)
+    api.get(`/mobile/products/${id}/`)
       .then((res) => setProduct(res.data))
       .catch(() => Alert.alert('Error', 'Could not load product'))
       .finally(() => setLoading(false));
   }, [id]);
-
-  const handleBuy = async () => {
-    if (!name || !phone || !address || !email) {
-      Alert.alert('Error', 'Please fill in all your details');
-      return;
-    }
-    setBuying(true);
-    try {
-      const res = await api.post('/orders/checkout/', {
-        items: [{ product_id: product?.id, quantity: parseInt(quantity) }],
-        guest_name: name,
-        guest_phone: phone,
-        guest_address: address,
-        guest_email: email,
-        goods_description: goodsDesc,
-      });
-      const paymentUrl = res.data.payment_urls?.[0]?.payment_url;
-      if (paymentUrl) {
-        await Linking.openURL(paymentUrl);
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error || 'Could not initiate payment');
-    } finally {
-      setBuying(false);
-    }
-  };
 
   if (loading) return <Loader />;
   if (!product) {
@@ -81,58 +74,109 @@ export default function ProductDetail() {
     );
   }
 
+  const unit: string = product.unit || 'kg';
+  const price = priceOf(product);
+  const available = product.quantity_kg ?? product.stock;
+  const maxQty = product.quantity_kg != null ? Number(product.quantity_kg) : undefined;
+  const location = product.location || product.vendor_city || product.vendor_name;
+
+  const dec = () => setQuantity((q) => Math.max(1, q - 1));
+  const inc = () => setQuantity((q) => (maxQty ? Math.min(maxQty, q + 1) : q + 1));
+
+  const cartItem = () => ({
+    id: product.id,
+    name: product.name,
+    price,
+    image: product.image,
+    is_farm_product: product.is_farm_product,
+    vendor_name: product.vendor_name,
+  });
+
+  const requireLogin = async (): Promise<boolean> => {
+    if (await isLoggedIn()) return true;
+    Alert.alert(
+      'Sign in to place order',
+      'Browsing as a guest is view-only. Please sign in to order or add items to your cart.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign In', onPress: () => router.push('/login') },
+      ]
+    );
+    return false;
+  };
+
+  const handleAddToCart = async () => {
+    if (!(await requireLogin())) return;
+    await addToCart(cartItem(), quantity);
+    Alert.alert('Added to cart', `${product.name} (x${quantity}) was added to your cart.`, [
+      { text: 'Keep shopping' },
+      { text: 'View cart', onPress: () => router.push('/cart' as any) },
+    ]);
+  };
+
+  const handleOrderNow = async () => {
+    if (!(await requireLogin())) return;
+    await addToCart(cartItem(), quantity);
+    router.push('/cart' as any);
+  };
+
   return (
     <Screen>
       <AppHeader title="Product" />
       <ScrollView>
-        <Image source={{ uri: product.image || 'https://via.placeholder.com/400' }} style={styles.image} resizeMode="cover" />
+        {product.image ? (
+          <Image source={{ uri: product.image }} style={styles.image} resizeMode="cover" />
+        ) : (
+          <View style={styles.placeholder}>
+            <Ionicons name="image-outline" size={56} color={c.border} />
+          </View>
+        )}
 
         <View style={styles.body}>
           <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>KES {priceOf(product).toLocaleString()}</Text>
-          <Text style={styles.vendor}>Sold by: {product.vendor_name}</Text>
-          <Text style={styles.stock}>In stock: {product.stock}</Text>
-          <Text style={styles.descLabel}>Description</Text>
-          <Text style={styles.desc}>{product.description}</Text>
 
-          <Button
-            title="Add to Cart"
-            icon="cart-outline"
-            variant="outline"
-            onPress={async () => {
-              await addToCart({
-                id: product.id,
-                name: product.name,
-                price: priceOf(product),
-                image: product.image,
-                is_farm_product: product.is_farm_product,
-                vendor_name: product.vendor_name,
-              });
-              Alert.alert('Added to cart', `${product.name} was added to your cart.`, [
-                { text: 'Keep shopping' },
-                { text: 'View cart', onPress: () => router.push('/cart' as any) },
-              ]);
-            }}
-          />
+          <Text style={styles.price}>
+            KES {price.toLocaleString()} <Text style={{ fontSize: 16, fontWeight: '600', color: c.textMuted }}>/ {unit}</Text>
+          </Text>
+
+          <View style={styles.metaRow}>
+            <Ionicons name="cube-outline" size={16} color={c.primary} />
+            <Text style={styles.metaText}>{available} {unit} available</Text>
+          </View>
+
+          {location ? (
+            <View style={styles.metaRow}>
+              <Ionicons name="location-outline" size={16} color={c.textMuted} />
+              <Text style={styles.locationText}>{location}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.divider} />
-          <Text style={styles.sectionTitle}>Or buy this item now</Text>
 
-          <Field label="Full Name *" placeholder="Enter your name" value={name} onChangeText={setName} />
-          <Field label="Phone Number *" placeholder="07XX XXX XXX" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          <Field label="Email *" placeholder="your@email.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <Field label="Delivery Address *" placeholder="Town, County" value={address} onChangeText={setAddress} />
-          <Field label="Quantity" placeholder="1" value={quantity} onChangeText={setQuantity} keyboardType="number-pad" />
-          <Field label="Goods Description (optional)" placeholder="Describe the goods..." value={goodsDesc} onChangeText={setGoodsDesc} multiline style={{ height: 80, textAlignVertical: 'top' }} />
+          <View>
+            <Text style={styles.qtyLabel}>Quantity</Text>
+            <View style={styles.qtyRow}>
+              <TouchableOpacity onPress={dec} activeOpacity={0.8} style={styles.qtyBtn} hitSlop={6}>
+                <Ionicons name="remove" size={22} color={c.onPrimary} />
+              </TouchableOpacity>
+              <Text style={styles.qtyValue}>{quantity}</Text>
+              <TouchableOpacity onPress={inc} activeOpacity={0.8} style={styles.qtyBtn} hitSlop={6}>
+                <Ionicons name="add" size={22} color={c.onPrimary} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-          <Button
-            title={buying ? 'Processing...' : `Buy Now — KES ${(parseFloat(product.price || '0') * parseInt(quantity || '1')).toLocaleString()}`}
-            icon="cart"
-            onPress={handleBuy}
-            loading={buying}
-            disabled={buying}
-            style={{ marginTop: 10, marginBottom: 32 }}
-          />
+          <View style={styles.divider} />
+
+          <View>
+            <Text style={styles.descHeading}>Description</Text>
+            <Text style={styles.desc}>{product.description}</Text>
+          </View>
+
+          <View style={styles.actions}>
+            <Button title="Add to Cart" icon="cart-outline" onPress={handleAddToCart} />
+            <Button title="Order Now" icon="flash-outline" variant="outline" onPress={handleOrderNow} />
+          </View>
         </View>
       </ScrollView>
     </Screen>

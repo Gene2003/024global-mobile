@@ -29,7 +29,7 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="products"
-        options={{ title: 'Products', tabBarIcon: ({ color }) => <Ionicons name="bag-handle" size={22} color={color} /> }}
+        options={{ title: 'Market', tabBarIcon: ({ color }) => <Ionicons name="storefront" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="services"

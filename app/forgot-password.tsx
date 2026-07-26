@@ -18,7 +18,7 @@ export default function ForgotPassword() {
     if (!email.trim()) return;
     setBusy(true);
     try {
-      await api.post('/users/password/reset/', { email: email.trim() });
+      await api.post('/users/mobile/password-reset/', { email: email.trim() });
       setSent(true);
     } catch {
       // endpoint always returns generic success; treat network errors gracefully

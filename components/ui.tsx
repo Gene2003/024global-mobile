@@ -254,6 +254,54 @@ export function Field({
   );
 }
 
+/* ── PasswordField: labelled password input with show/hide eye ── */
+export function PasswordField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+}: {
+  label?: string;
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+}) {
+  const { theme } = useTheme();
+  const c = theme.colors;
+  const [show, setShow] = React.useState(false);
+  return (
+    <View style={{ marginBottom: 14 }}>
+      {label ? (
+        <Text style={{ color: c.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 6 }}>{label}</Text>
+      ) : null}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: c.surface,
+          borderWidth: 1,
+          borderColor: c.border,
+          borderRadius: theme.radius.md,
+          paddingHorizontal: 14,
+        }}
+      >
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={c.placeholder}
+          secureTextEntry={!show}
+          autoCapitalize="none"
+          style={{ flex: 1, paddingVertical: 13, fontSize: 15, color: c.text }}
+        />
+        <TouchableOpacity onPress={() => setShow((s) => !s)} hitSlop={10}>
+          <Ionicons name={show ? 'eye-off' : 'eye'} size={20} color={c.textMuted} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 /* ── Badge ── */
 type BadgeTone = 'primary' | 'gold' | 'success' | 'danger' | 'info' | 'neutral';
 export function Badge({ label, tone = 'primary', style }: { label: string; tone?: BadgeTone; style?: StyleProp<ViewStyle> }) {

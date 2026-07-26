@@ -24,3 +24,27 @@ export async function isLoggedIn() {
   const token = await AsyncStorage.getItem('access_token');
   return !!token;
 }
+
+/* ── guest (browse-only) mode ── */
+export async function setGuest() {
+  await AsyncStorage.setItem('guest_mode', '1');
+}
+export async function isGuest() {
+  return (await AsyncStorage.getItem('guest_mode')) === '1';
+}
+export async function clearGuest() {
+  await AsyncStorage.removeItem('guest_mode');
+}
+
+/** Route a signed-in user to their home dashboard based on role. */
+export function dashboardRoute(user: any): string {
+  if (!user) return '/(tabs)';
+  const role = user.role;
+  const vt = user.vendor_type;
+  const spt = user.service_provider_type;
+  if (role === 'admin') return '/admin';
+  if (role === 'user') return '/affiliate';
+  if (role === 'vendor') return vt === 'farmer' ? '/farmer' : '/vendor';
+  if (role === 'service_provider') return spt === 'transport' ? '/transporter-dashboard' : '/service-provider';
+  return '/(tabs)'; // customer / buyer -> marketplace
+}

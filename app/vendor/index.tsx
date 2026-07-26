@@ -44,7 +44,7 @@ export default function VendorDashboard() {
   const fetchProducts = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await api.get('/products/my_products/');
+      const res = await api.get('/mobile/products/my_products/');
       const raw = res.data;
       setProducts(Array.isArray(raw) ? raw : (raw.results || []));
     } catch (err: any) {

@@ -45,7 +45,7 @@ export default function EditProduct() {
 
   useEffect(() => {
     api
-      .get(`/products/${id}/`)
+      .get(`/mobile/products/${id}/`)
       .then((res) => {
         const p = res.data;
         setProduct(p);
@@ -90,7 +90,7 @@ export default function EditProduct() {
       if (isFarm && form.quantity_kg !== '') payload.quantity_kg = parseInt(form.quantity_kg, 10);
       if (!isFarm && form.stock !== '') payload.stock = parseInt(form.stock, 10);
 
-      await api.patch(`/products/${id}/`, payload);
+      await api.patch(`/mobile/products/${id}/`, payload);
       Alert.alert('Saved', 'Product updated successfully.', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (err: any) {
       const data = err.response?.data;
@@ -112,7 +112,7 @@ export default function EditProduct() {
         style: 'destructive',
         onPress: async () => {
           try {
-            await api.delete(`/products/${id}/`);
+            await api.delete(`/mobile/products/${id}/`);
             Alert.alert('Deleted', 'Product removed.', [{ text: 'OK', onPress: () => router.back() }]);
           } catch {
             Alert.alert('Error', 'Failed to delete product');

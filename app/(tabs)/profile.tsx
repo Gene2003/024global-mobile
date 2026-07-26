@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -157,6 +158,29 @@ export default function ProfileScreen() {
           </View>
         ) : null}
       </View>
+
+      {/* 024 verification code (saved for WhatsApp access) */}
+      {user.verification_code ? (
+        <View style={{ paddingHorizontal: 16, marginTop: 16 }}>
+          <Text style={styles(c).sectionTitle}>024 Verification Code</Text>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Ionicons name="logo-whatsapp" size={24} color={c.success} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: c.text, fontWeight: '800', fontSize: 18, letterSpacing: 1 }}>{user.verification_code}</Text>
+              <Text style={{ color: c.textMuted, fontSize: 12, marginTop: 2 }}>Save this for WhatsApp access</Text>
+            </View>
+            <TouchableOpacity
+              hitSlop={10}
+              onPress={async () => {
+                await Clipboard.setStringAsync(user.verification_code);
+                Alert.alert('Copied', 'Verification code copied.');
+              }}
+            >
+              <Ionicons name="copy-outline" size={20} color={c.primary} />
+            </TouchableOpacity>
+          </Card>
+        </View>
+      ) : null}
 
       {/* Role menu */}
       <View style={{ padding: 16 }}>

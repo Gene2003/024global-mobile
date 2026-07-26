@@ -99,14 +99,21 @@ export default function OrdersScreen() {
               <Text style={{ color: c.textMuted, fontSize: 12 }}>
                 Order #{o.order_id} · {new Date(o.created_at).toLocaleDateString()}
               </Text>
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                <TouchableOpacity
+                  onPress={() => router.push(`/track-order?id=${o.order_id}` as any)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.primary, paddingVertical: 9, paddingHorizontal: 14, borderRadius: theme.radius.md }}
+                >
+                  <Ionicons name="navigate" size={16} color={c.onPrimary} />
+                  <Text style={{ color: c.onPrimary, fontWeight: '700', fontSize: 13 }}>Track</Text>
+                </TouchableOpacity>
                 {o.status !== 'completed' ? (
                   <TouchableOpacity
                     onPress={() => pay(o)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.primary, paddingVertical: 9, paddingHorizontal: 14, borderRadius: theme.radius.md }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.surfaceAlt, paddingVertical: 9, paddingHorizontal: 14, borderRadius: theme.radius.md }}
                   >
-                    <Ionicons name="card" size={16} color={c.onPrimary} />
-                    <Text style={{ color: c.onPrimary, fontWeight: '700', fontSize: 13 }}>Pay now</Text>
+                    <Ionicons name="card" size={16} color={c.text} />
+                    <Text style={{ color: c.text, fontWeight: '700', fontSize: 13 }}>Pay now</Text>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity

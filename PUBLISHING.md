@@ -17,16 +17,13 @@ The app is already linked to an EAS project (`extra.eas.projectId` in `app.json`
 
 ---
 
-## 1. Replace the placeholder app icon & splash (REQUIRED before store review)
+## 1. App icon & splash — DONE (uses the 024 logo)
 
-The app currently ships the default Expo icon/splash (a React logo) — Apple/Google will reject or it will look unbranded. Replace these files with **your** 024 Global Connect branding, keeping the same filenames/paths:
+The app icon, splash, and Android adaptive icon are now generated from the official **024 Global logo** (`assets/images/icon.png`, `splash-icon.png`, `android-icon-foreground.png`, `android-icon-monochrome.png`, `favicon.png`). Run `npx expo-doctor` to validate before building. If you have a higher-resolution logo, drop it in and regenerate.
 
-- `assets/images/icon.png` — **1024×1024**, no transparency (App Store + base icon)
-- `assets/images/splash-icon.png` — ~1284×2778 or a centered logo on transparent bg
-- `assets/images/android-icon-foreground.png` / `-background.png` / `-monochrome.png` — Android adaptive icon layers
-- `assets/images/favicon.png` — web
+## 1b. Payments — Paystack
 
-Tip: put your 1024px logo art in and run `npx expo-doctor` to validate. (The brand logo used on the Home screen lives at `assets/home/logo.png` but is only 200×200 — too small for the app icon; export a 1024px version.)
+The mobile app takes payment through **Paystack** (same provider as the website), which supports **M-Pesa and card/bank** on its secure page. Make sure Paystack is in **live** mode (not test) before release. No extra app config is needed beyond the backend's existing `PAYSTACK_SECRET_KEY`.
 
 ---
 
@@ -91,20 +88,20 @@ eas submit --platform ios --profile production --latest
 - ✅ Light + dark mode, adaptive to system, with an in-app toggle.
 - ✅ No non-HTTPS network calls.
 
-## Backend deploy (required for the new dashboards to work)
+## Backend deploy (required for the mobile features to work)
 
-The mobile app now uses new backend endpoints (transporter bookings, real password reset, affiliate listing verification). Deploy the Django backend and run migrations:
+The mobile app is fully **isolated** from the website: it only calls mobile-namespaced endpoints (`/api/mobile/products/…`, `/api/users/mobile/…`, `/api/orders/mobile/…`, plus new tracking/booking endpoints). The website's shared endpoints (`/api/products/`, `/api/users/me/`, `/api/users/password/reset/`) are unchanged.
+
+Deploy the Django backend and run migrations:
 
 ```bash
 # on the server / Render deploy
-python manage.py migrate services   # applies 0005_add_in_transit_status
+python manage.py migrate            # applies services 0005, users 0020, products 0013, orders 0018
 ```
 
-New/changed API endpoints: `/api/service-bookings/` (+ `/accept/ /pickup/ /deliver/ /decline/`), `/api/users/password/reset/` (+ `/confirm/`), `/api/users/agent/pending-listings/`, `/api/users/agent/listings/<id>/verify/`.
-
-The password-reset email links to `FRONTEND_URL/reset-password?uid=…&token=…`, so make sure the **web** app has a reset-password page that POSTs to `/api/users/password/reset/confirm/` (the API is ready).
+Then confirm Paystack is in live mode (section 1b) and SMTP env vars are set for password-reset emails.
 
 ## Still recommended before launch
 
-- Brand icon/splash (section 1 above).
-- Confirm SMTP/email env vars are set on the backend so password-reset emails actually send.
+- Confirm Paystack live keys are active so real payments go through.
+- Prepare a Privacy Policy URL and store screenshots (Home, Market, a dashboard, one in dark mode).

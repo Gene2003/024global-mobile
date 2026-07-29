@@ -397,31 +397,22 @@ export default function TrackOrderScreen() {
             </View>
           </Card>
 
-          {/* ── 6. ESCROW STATUS ── */}
+          {/* ── 6. PAYMENT ── */}
           <Card>
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 16, marginBottom: 10 }}>Payment</Text>
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 22 }}>
               KES {Number(data.amount).toLocaleString()}
             </Text>
-            {data.payment_released ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                <Ionicons name="checkmark-circle" size={18} color={c.success} />
-                <Text style={{ color: c.success, fontWeight: '700', fontSize: 13 }}>Released to farmer</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                <Ionicons name="lock-closed" size={16} color={c.gold} />
-                <Text style={{ color: c.gold, fontWeight: '700', fontSize: 13, flex: 1 }}>
-                  Held in escrow · released on delivery confirmation
-                </Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+              <Ionicons name="shield-checkmark" size={16} color={c.success} />
+              <Text style={{ color: c.textMuted, fontWeight: '700', fontSize: 13 }}>Paid securely via Paystack</Text>
+            </View>
           </Card>
 
           {/* ── 7. CONFIRM DELIVERY ── */}
           {showConfirmButton ? (
             <Button
-              title="Confirm Delivery to Release Payment"
+              title="Confirm Delivery"
               icon="checkmark-done"
               variant="success"
               loading={confirming}

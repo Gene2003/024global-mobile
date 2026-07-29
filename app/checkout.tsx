@@ -68,7 +68,7 @@ export default function Checkout() {
       }));
       await saveOrders(orders);
       await clearCart();
-      // open the real payment page (M-Pesa STK / card via Paystack)
+      // open the secure Paystack payment page (M-Pesa / card)
       await WebBrowser.openBrowserAsync(urls[0].payment_url);
       setDone({ reference: urls[0].reference, orderId: urls[0].order_id });
     } catch (err: any) {
@@ -97,11 +97,9 @@ export default function Checkout() {
             <Text style={{ color: c.text, flex: 1, fontSize: 14 }}>The farmer has been notified of your order.</Text>
           </Card>
 
-          <Card style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 12, backgroundColor: c.goldTint, borderColor: 'transparent' }}>
-            <Ionicons name="lock-closed" size={20} color={c.gold} />
-            <Text style={{ color: c.text, flex: 1, fontSize: 13, lineHeight: 19 }}>
-              Your payment is held safely in escrow and is only released to the farmer once you confirm delivery.
-            </Text>
+          <Card style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 12 }}>
+            <Ionicons name="shield-checkmark" size={20} color={c.success} />
+            <Text style={{ color: c.text, flex: 1, fontSize: 13 }}>Payment processed securely via Paystack.</Text>
           </Card>
 
           <Button title="Track Order" icon="navigate" style={{ marginTop: 22 }} onPress={() => router.replace(`/track-order?id=${done.orderId}` as any)} />
@@ -118,29 +116,20 @@ export default function Checkout() {
       {paying ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Loader />
-          <Text style={{ color: c.textMuted, marginTop: 16, textAlign: 'center' }}>
-            Sending your payment request…
-          </Text>
+          <Text style={{ color: c.textMuted, marginTop: 16, textAlign: 'center' }}>Placing your order…</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16 }}>
           <Card style={{ gap: 10 }}>
             <Text style={{ color: c.text, fontWeight: '800', fontSize: 15 }}>Payment</Text>
-            {isMpesa ? (
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-                <Ionicons name="phone-portrait" size={22} color={c.primary} />
-                <Text style={{ color: c.textMuted, flex: 1, fontSize: 14, lineHeight: 20 }}>
-                  An M-Pesa prompt (STK push) will be sent to <Text style={{ color: c.text, fontWeight: '700' }}>{profile?.phone || 'your phone'}</Text>. Enter your M-Pesa PIN on the prompt to complete payment.
-                </Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
-                <Ionicons name="card" size={22} color={c.primary} />
-                <Text style={{ color: c.textMuted, flex: 1, fontSize: 14, lineHeight: 20 }}>
-                  You&apos;ll be taken to a secure page to complete your card / bank payment.
-                </Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+              <Ionicons name={isMpesa ? 'phone-portrait' : 'card'} size={22} color={c.primary} />
+              <Text style={{ color: c.textMuted, flex: 1, fontSize: 14, lineHeight: 20 }}>
+                {isMpesa
+                  ? "You'll be taken to a secure Paystack page. Choose M-Pesa and you'll get a prompt on your phone — enter your PIN to complete payment."
+                  : "You'll be taken to a secure Paystack page to complete your card / bank payment."}
+              </Text>
+            </View>
           </Card>
 
           <Card style={{ gap: 10, marginTop: 12 }}>
@@ -157,7 +146,7 @@ export default function Checkout() {
 
           <Button title={`Pay KES ${fees.total.toLocaleString()}`} icon="lock-closed" onPress={pay} style={{ marginTop: 16 }} />
           <Text style={{ color: c.textMuted, fontSize: 12, textAlign: 'center', marginTop: 8 }}>
-            Payment is held in escrow until you confirm delivery.
+            Secure payment via Paystack (M-Pesa & card).
           </Text>
         </ScrollView>
       )}

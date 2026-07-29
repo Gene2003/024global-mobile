@@ -160,8 +160,8 @@ export default function CartScreen() {
                 active={method === 'bank'}
                 onPress={() => setMethod('bank')}
                 icon="card"
-                title="Bank Transfer"
-                sub="Pay by card / bank"
+                title="Bank / Card"
+                sub="Pay by card or bank transfer"
                 c={c}
                 theme={theme}
               />

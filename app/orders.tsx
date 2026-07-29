@@ -55,7 +55,9 @@ export default function OrdersScreen() {
     setRefreshing(false);
   };
 
-  const pay = (o: LocalOrder) => WebBrowser.openBrowserAsync(o.payment_url);
+  const pay = (o: LocalOrder) => {
+    if (o.payment_url) WebBrowser.openBrowserAsync(o.payment_url);
+  };
 
   const contactVendor = async (o: LocalOrder) => {
     try {
@@ -107,7 +109,7 @@ export default function OrdersScreen() {
                   <Ionicons name="navigate" size={16} color={c.onPrimary} />
                   <Text style={{ color: c.onPrimary, fontWeight: '700', fontSize: 13 }}>Track</Text>
                 </TouchableOpacity>
-                {o.status !== 'completed' ? (
+                {o.status !== 'completed' && o.payment_url ? (
                   <TouchableOpacity
                     onPress={() => pay(o)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: c.surfaceAlt, paddingVertical: 9, paddingHorizontal: 14, borderRadius: theme.radius.md }}

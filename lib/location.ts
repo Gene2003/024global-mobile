@@ -20,5 +20,7 @@ export async function getCurrentPlace(): Promise<Place | null> {
   } catch {
     /* reverse geocode is best-effort */
   }
-  return { latitude: pos.coords.latitude, longitude: pos.coords.longitude, place };
+  // backend stores lat/long with max 6 decimal places (~0.11 m precision)
+  const round6 = (n: number) => Math.round(n * 1e6) / 1e6;
+  return { latitude: round6(pos.coords.latitude), longitude: round6(pos.coords.longitude), place };
 }

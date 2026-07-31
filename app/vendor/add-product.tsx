@@ -166,8 +166,9 @@ export default function AddProduct() {
       if (form.available_from.trim()) fd.append('available_from', form.available_from);
       if (form.location.trim()) fd.append('location', form.location);
       if (coords) {
-        fd.append('latitude', String(coords.latitude));
-        fd.append('longitude', String(coords.longitude));
+        // backend allows max 6 decimal places on lat/long
+        fd.append('latitude', coords.latitude.toFixed(6));
+        fd.append('longitude', coords.longitude.toFixed(6));
       }
       if (image) {
         fd.append('image', {

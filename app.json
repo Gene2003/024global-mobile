@@ -8,6 +8,12 @@
     "scheme": "globalconnect024",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/628ed1aa-e596-447c-925a-7ebc9eca3511"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.global024.app",

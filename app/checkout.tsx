@@ -43,12 +43,13 @@ export default function Checkout() {
     }
     setPaying(true);
     try {
-      const res = await api.post('/orders/cart-checkout/', {
+      const res = await api.post('/orders/mobile/checkout/', {
         items: items.map((i) => ({ product_id: i.id, quantity: i.quantity, unit_price: i.price })),
         guest_name: profile.name,
         guest_email: profile.email,
         guest_phone: profile.phone,
         guest_address: profile.address,
+        total_amount: fees.total,
         goods_description: '',
       });
       const urls = res.data?.payment_urls || [];

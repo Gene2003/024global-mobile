@@ -38,14 +38,14 @@ const banners = [
 ];
 
 const categoryLinks = [
-  { name: 'Vegetables', img: img1 },
-  { name: 'Tomatoes', img: img2 },
-  { name: 'Fruits', img: img3 },
-  { name: 'Root Crops', img: img4 },
-  { name: 'Herbs', img: img5 },
-  { name: 'Legumes', img: img6 },
-  { name: 'Leafy Greens', img: img7 },
-  { name: 'Spices', img: img8 },
+  { name: 'Vegetables', img: require('../../assets/home/products/carrots.jpg') },
+  { name: 'Tomatoes', img: require('../../assets/home/products/tomato.jpg') },
+  { name: 'Fruits', img: require('../../assets/home/products/strawberry.jpg') },
+  { name: 'Root Crops', img: require('../../assets/home/products/potato.jpg') },
+  { name: 'Herbs', img: require('../../assets/home/products/rosemary.jpg') },
+  { name: 'Legumes', img: require('../../assets/home/products/beans.jpg') },
+  { name: 'Leafy Greens', img: require('../../assets/home/products/sukumawiki.jpg') },
+  { name: 'Spices', img: require('../../assets/home/products/ginger.jpg') },
 ];
 
 const featuredProducts = [

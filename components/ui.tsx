@@ -33,12 +33,14 @@ export function AppHeader({
   showBack = true,
   right,
   showThemeToggle = false,
+  showHome = false,
 }: {
   title: string;
   subtitle?: string;
   showBack?: boolean;
   right?: React.ReactNode;
   showThemeToggle?: boolean;
+  showHome?: boolean;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -81,6 +83,24 @@ export function AppHeader({
           </Text>
         ) : null}
       </View>
+      {showHome ? (
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/products' as any)}
+          hitSlop={10}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            height: 36,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            backgroundColor: 'rgba(255,255,255,0.10)',
+          }}
+        >
+          <Ionicons name="storefront" size={18} color={theme.colors.onHeader} />
+          <Text style={{ color: theme.colors.onHeader, fontWeight: '700', fontSize: 13 }}>Market</Text>
+        </TouchableOpacity>
+      ) : null}
       {showThemeToggle ? <ThemeToggle /> : null}
       {right}
     </View>

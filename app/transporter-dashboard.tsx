@@ -192,6 +192,7 @@ export default function TransporterDashboard() {
       <AppHeader
         title="Transporter Dashboard"
         subtitle={user ? `${user.first_name} · Transport` : 'Transport'}
+        showHome
         right={
           tab === 'listings' ? (
             <TouchableOpacity

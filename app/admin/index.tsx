@@ -40,7 +40,7 @@ export default function AdminDashboard() {
 
   return (
     <Screen>
-      <AppHeader title="Admin Dashboard" subtitle="Platform overview and tools" />
+      <AppHeader title="Admin Dashboard" subtitle="Platform overview and tools" showHome />
       <ScrollView>
         {loading ? (
           <ActivityIndicator size="large" color={c.primary} style={{ marginTop: 40 }} />

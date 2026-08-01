@@ -67,11 +67,37 @@ export default function Checkout() {
         status: 'pending',
         created_at: now,
       }));
-      await saveOrders(orders);
-      await clearCart();
-      // open the secure Paystack payment page (M-Pesa / card)
+      const reference = urls[0].reference;
+      const orderId = urls[0].order_id;
+      await saveOrders(orders); // saved as 'pending' so it appears in My Orders
+      // open the secure Paystack page — M-Pesa STK requires the PIN to complete
       await WebBrowser.openBrowserAsync(urls[0].payment_url);
-      setDone({ reference: urls[0].reference, orderId: urls[0].order_id });
+
+      // only confirm the order once Paystack says the payment actually succeeded
+      let paid = false;
+      for (let i = 0; i < 3 && !paid; i++) {
+        try {
+          const v = await api.get(`/orders/mobile/verify/${reference}/`);
+          if (v.data?.paid) paid = true;
+        } catch {
+          /* ignore, retry */
+        }
+        if (!paid && i < 2) await new Promise((r) => setTimeout(r, 2500));
+      }
+
+      if (paid) {
+        await clearCart();
+        setDone({ reference, orderId });
+      } else {
+        Alert.alert(
+          'Payment not completed',
+          "We haven't received your M-Pesa payment. If you entered your PIN it may still be processing — check My Orders shortly, or tap Pay now there to retry.",
+          [
+            { text: 'View Orders', onPress: () => router.replace('/orders' as any) },
+            { text: 'OK' },
+          ]
+        );
+      }
     } catch (err: any) {
       Alert.alert('Checkout failed', err.response?.data?.error || 'Please try again in a moment.');
     } finally {

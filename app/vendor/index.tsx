@@ -93,6 +93,7 @@ export default function VendorDashboard() {
     <Screen>
       <AppHeader
         title="Vendor Dashboard"
+        showHome
         right={
           <TouchableOpacity
             hitSlop={10}

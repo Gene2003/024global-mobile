@@ -70,6 +70,7 @@ export default function AffiliateDashboard() {
       <AppHeader
         title="Affiliate Dashboard"
         subtitle={user ? `Welcome back, ${user.first_name}!` : undefined}
+        showHome
         showThemeToggle
       />
 

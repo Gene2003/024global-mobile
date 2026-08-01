@@ -67,6 +67,7 @@ export default function ServiceProviderDashboard() {
       <AppHeader
         title="Service Provider"
         subtitle={user ? `${user.first_name} · ${serviceTypeLabel(user.vendor_type || '')}` : undefined}
+        showHome
       />
 
       <Segmented

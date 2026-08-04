@@ -16,15 +16,15 @@ import { useTheme } from '../../lib/theme-context';
 import { useThemedStyles } from '../../components/ui';
 
 /* ── exact website images (assets/home) ── */
-const img1 = require('../../assets/home/1.png');
-const img2 = require('../../assets/home/2.png');
-const img3 = require('../../assets/home/3.png');
-const img4 = require('../../assets/home/4.png');
-const img5 = require('../../assets/home/5.png');
-const img6 = require('../../assets/home/6.png');
-const img7 = require('../../assets/home/7.png');
-const img8 = require('../../assets/home/8.png');
-const img9 = require('../../assets/home/9.png');
+const img1 = require('../../assets/home/1.jpg');
+const img2 = require('../../assets/home/2.jpg');
+const img3 = require('../../assets/home/3.jpg');
+const img4 = require('../../assets/home/4.jpg');
+const img5 = require('../../assets/home/5.jpg');
+const img6 = require('../../assets/home/6.jpg');
+const img7 = require('../../assets/home/7.jpg');
+const img8 = require('../../assets/home/8.jpg');
+const img9 = require('../../assets/home/9.jpg');
 const logo = require('../../assets/home/logo.png');
 
 const { width: SCREEN_W } = Dimensions.get('window');

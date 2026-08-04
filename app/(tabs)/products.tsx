@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { addToCart } from '../../lib/cart';
 import { isLoggedIn } from '../../lib/auth';
+import { readCache, writeCache } from '../../lib/cache';
 import { useTheme } from '../../lib/theme-context';
 import { Screen, AppHeader, Badge, Button, EmptyState, Loader, useThemedStyles } from '../../components/ui';
 
@@ -106,11 +107,31 @@ export default function ProductsScreen() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    let mounted = true;
+    // 1) show cached products instantly (no spinner on repeat visits)
+    readCache<Product[]>('mobile_products').then((cached) => {
+      if (mounted && cached && cached.length) {
+        setProducts(cached);
+        setLoading(false);
+      }
+    });
+    // 2) refresh from the network in the background
     api
       .get('/mobile/products/')
-      .then((res) => setProducts(Array.isArray(res.data) ? res.data : res.data.results || []))
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data.results || [];
+        if (mounted) {
+          setProducts(list);
+          writeCache('mobile_products', list);
+        }
+      })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const filtered = products.filter((p) => p.name?.toLowerCase().includes(search.toLowerCase()));

@@ -5,7 +5,9 @@ const BASE_URL = 'https://gonzaga-u98x.onrender.com/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  // 30s: the free-tier backend can take ~30s to wake from sleep (cold start);
+  // a shorter timeout would make the first request of a session fail.
+  timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });
 

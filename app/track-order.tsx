@@ -3,6 +3,7 @@ import { View, Text, ScrollView, RefreshControl, Animated, Linking, Alert } from
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../lib/api';
+import { getOrders } from '../lib/orders';
 import { useTheme } from '../lib/theme-context';
 import { AppHeader, Card, Button, Loader } from '../components/ui';
 
@@ -97,18 +98,27 @@ export default function TrackOrderScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [ref, setRef] = useState<string | undefined>();
+
+  // the order's payment reference (stored locally at checkout) proves this is our order
+  useEffect(() => {
+    getOrders().then((list) => {
+      const o = list.find((x) => String(x.order_id) === String(id));
+      if (o?.reference) setRef(o.reference);
+    });
+  }, [id]);
 
   const fetchTracking = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await api.get(`/orders/track/${id}/`);
+      const res = await api.get(`/orders/track/${id}/`, { params: ref ? { ref } : undefined });
       setData(res.data as TrackData);
     } catch {
       /* keep last known data; polling will retry */
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, ref]);
 
   // initial load + 10s polling for real-time feel
   useEffect(() => {
@@ -127,14 +137,14 @@ export default function TrackOrderScreen() {
     if (!id) return;
     setConfirming(true);
     try {
-      await api.post(`/orders/${id}/confirm-delivery/`);
+      await api.post(`/orders/${id}/confirm-delivery/`, { reference: ref });
       await fetchTracking();
     } catch {
       Alert.alert('Could not confirm', 'Please try again in a moment.');
     } finally {
       setConfirming(false);
     }
-  }, [id, fetchTracking]);
+  }, [id, ref, fetchTracking]);
 
   if (loading && !data) return <Loader />;
 
